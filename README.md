@@ -22,8 +22,15 @@ Antes de compilar, asegúrate de tener instalado:
 
 - **Java Development Kit (JDK)** 11 o superior
 - **Gradle**
+- **IDE IntelliJ IDEA**
+- **Git instalado**
 
 ## Compilar y ejecutar
+
+```bash
+Abrir una terminal de git y escribir el comando:
+git clone https://github.com/Thiago-Valdez/EscapeRoomguelike
+```
 
 ### En Windows
 
@@ -45,9 +52,7 @@ Configuración inicial del proyecto terminada
 
 ## WIKI
 
-Wiki del proyecto con toda la información relacionada:
-
-https://github.com/Thiago-Valdez/EscapeRoomguelike/wiki
+[Enlace a la Wiki](https://github.com/Thiago-Valdez/EscapeRoomguelike/wiki) 
 
 
 
