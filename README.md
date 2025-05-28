@@ -68,7 +68,7 @@ Configuración inicial del proyecto terminada
 
 ## WIKI
 
-[Enlace a la Wiki](https://github.com/Thiago-Valdez/EscapeRoomguelike/wiki) 
+[Enlace a la Wiki](https://github.com/Thiago-Valdez/EscapeRoomguelike/wiki/INICIO) 
 
 
 
