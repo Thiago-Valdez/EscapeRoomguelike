@@ -32,6 +32,15 @@ Abrir una terminal de git y escribir el comando:
 git clone https://github.com/Thiago-Valdez/EscapeRoomguelike
 ```
 
+### Para abrir el proyecto en IntelliJ IDEA:
+![imagen](https://github.com/user-attachments/assets/3ee6c604-0122-4e90-b2aa-49ae399b69eb)
+Seleccionar File --> Open
+![imagen](https://github.com/user-attachments/assets/547b1fac-2b63-4163-9aa8-61c8d56f717b)
+Buscas la ruta **PROYECTO\build.gradle** y seleccionas "OK"
+![imagen](https://github.com/user-attachments/assets/981346de-5527-4260-b4e0-91f88a1a0d69)
+Seleccionas la opción **Open as project**
+
+
 ### En Windows
 
 ```bash
