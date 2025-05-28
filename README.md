@@ -40,12 +40,12 @@ Seleccionar File --> Open
 
 ![imagen](https://github.com/user-attachments/assets/547b1fac-2b63-4163-9aa8-61c8d56f717b)
 ```bash
-Buscas la ruta **PROYECTO\build.gradle** y seleccionas "OK"
+Buscas la ruta PROYECTO\build.gradle y seleccionas "OK"
 ```
 
 ![imagen](https://github.com/user-attachments/assets/981346de-5527-4260-b4e0-91f88a1a0d69)
 ```bash
-Seleccionas la opción **Open as project**
+Seleccionas la opción Open as project
 ```
 
 ### Para ejecutar en Windows
