@@ -13,3 +13,4 @@
 ## [0.1.1] - 2025/06/01
 ### Añadido
 - Correción de errores en README.md y CHANGELOG.md
+ 
