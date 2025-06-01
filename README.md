@@ -11,6 +11,7 @@ Dos jugadores participan en un experimento misterioso y deben cooperar para esca
 
 ## Plataformas  y tecnologías utilizadas
 
+- Java
 - LibGDX
 - Desktop
 - IDE IntelliJ IDEA
@@ -59,7 +60,7 @@ gradlew.bat lwjgl3:run
 
 ```bash
 Abre una terminal CMD que apunte a la dirección raíz del proyecto y ejecuta:
-./gradlew.bat lwjgl3:run
+./gradlew lwjgl3:run
 ```
 ## Estado actual del proyecto:
 
