@@ -27,8 +27,6 @@ public class ControlDelJugador implements InputProcessor {
         return true;
     }
 
-    // Estos métodos hay que implementarlos aunque no los uses
-
     public boolean keyTyped(char character) { return false; }
 
     public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
@@ -43,7 +41,7 @@ public class ControlDelJugador implements InputProcessor {
 
     public boolean scrolled(float amountX, float amountY) { return false; }
 
-    // Getter para saber si se está moviendo
+
     public float getVelocidad() { return velocidad; }
     public boolean vaArriba() { return arriba; }
     public boolean vaAbajo() { return abajo; }

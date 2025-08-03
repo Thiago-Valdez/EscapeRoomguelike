@@ -31,7 +31,6 @@ public class MenuPrincipal implements Screen {
         texturaLogo = new Texture("goku.jpg");
         Image imagenLogo = new Image(texturaLogo);
 
-        // Crear el botón "Jugar"
         TextButton botonJugar = new TextButton("Jugar", skin);
         botonJugar.addListener(new ClickListener() {
             @Override
