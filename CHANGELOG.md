@@ -13,4 +13,12 @@
 ## [0.1.1] - 2025/06/01
 ### Añadido
 - Correción de errores en README.md y CHANGELOG.md
+
+## [0.1.2] - 2025/07/30
+### Añadido
+- Agrego Pantalla de carga y Menú de inicio
+
+## [0.1.3] - 2025/08/03
+### Añadido
+- Prototipo jugable comenzado
  
