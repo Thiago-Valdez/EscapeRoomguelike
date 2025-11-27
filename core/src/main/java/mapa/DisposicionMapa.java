@@ -30,6 +30,14 @@ public final class DisposicionMapa {
         porCelda.put(clave(c.gx, c.gy), c);
     }
 
+    public Colocacion buscarPorGrid(int gx, int gy) {
+        for (Colocacion c : todas()) {
+            if (c.gx == gx && c.gy == gy) return c;
+        }
+        return null;
+    }
+
+
     public boolean ocupada(int gx, int gy) {
         return porCelda.containsKey(clave(gx, gy));
     }

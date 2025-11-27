@@ -1,3 +1,4 @@
+// lwjgl3/build.gradle
 
 buildscript {
   repositories {
@@ -5,80 +6,100 @@ buildscript {
   }
   dependencies {
     classpath "io.github.fourlastor:construo:1.7.1"
-    if(enableGraalNative == 'true') {
+    if (enableGraalNative == 'true') {
       classpath "org.graalvm.buildtools.native:org.graalvm.buildtools.native.gradle.plugin:0.9.28"
     }
   }
 }
+
 plugins {
   id "application"
 }
-apply plugin: 'io.github.fourlastor.construo'
 
+apply plugin: 'io.github.fourlastor.construo'
 
 import io.github.fourlastor.construo.Target
 
+// Los assets del juego
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
+
+// Clase main del launcher
 mainClassName = 'io.github.principal.lwjgl3.Lwjgl3Launcher'
 application.setMainClass(mainClassName)
+
 eclipse.project.name = appName + '-lwjgl3'
-java.sourceCompatibility = 17
-java.targetCompatibility = 17
+
+java.sourceCompatibility = JavaVersion.VERSION_17
+java.targetCompatibility = JavaVersion.VERSION_17
 if (JavaVersion.current().isJava9Compatible()) {
-        compileJava.options.release.set(17)
+  compileJava.options.release.set(17)
 }
 
 dependencies {
+  // --- Módulo core del juego ---
+  implementation project(":core")
+
+  // --- LibGDX desktop + controllers ---
   implementation "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
   implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
-  implementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
-  implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
-  implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-  implementation project(':core')
-  implementation("com.badlogicgames.gdx:gdx-tools:$gdxVersion"){exclude group: 'com.badlogicgames.gdx', module: 'gdx-backend-lwjgl'}
 
-  if(enableGraalNative == 'true') {
+  // --- Box2D + Freetype (lógica) ---
+  implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+  implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+
+  // --- Nativos desktop (se cargan en runtime) ---
+  runtimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  runtimeOnly "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
+  runtimeOnly "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+
+  // gdx-tools para cosas de debug/herramientas
+  implementation("com.badlogicgames.gdx:gdx-tools:$gdxVersion") {
+    exclude group: 'com.badlogicgames.gdx', module: 'gdx-backend-lwjgl'
+  }
+
+  // --- Soporte GraalVM nativo (opcional) ---
+  if (enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-backend-lwjgl3:$graalHelperVersion"
-      implementation "io.github.berstanio:gdx-svmhelper-extension-box2d:$graalHelperVersion"
-      implementation "io.github.berstanio:gdx-svmhelper-extension-freetype:$graalHelperVersion"
-
-    }
+    implementation "io.github.berstanio:gdx-svmhelper-extension-box2d:$graalHelperVersion"
+    implementation "io.github.berstanio:gdx-svmhelper-extension-freetype:$graalHelperVersion"
+  }
 }
 
 def os = System.properties['os.name'].toLowerCase()
 
 run {
   workingDir = rootProject.file('assets').path
-// You can uncomment the next line if your IDE claims a build failure even when the app closed properly.
-  //setIgnoreExitValue(true)
+  // setIgnoreExitValue(true) // si lo necesitás
 
-  if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
+  if (os.contains('mac')) {
+    jvmArgs += "-XstartOnFirstThread"
+  }
 }
 
 jar {
-// sets the name of the .jar file this produces to the name of the game or app, with the version after.
+  // nombre del jar: Nombre-Del-Juego-version.jar
   archiveFileName.set("${appName}-${projectVersion}.jar")
-// the duplicatesStrategy matters starting in Gradle 7.0; this setting works.
   duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
   dependsOn configurations.runtimeClasspath
   from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-// these "exclude" lines remove some unnecessary duplicate files in the output JAR.
+
   exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA')
   dependencies {
     exclude('META-INF/INDEX.LIST', 'META-INF/maven/**')
   }
-// setting the manifest makes the JAR runnable.
+
   manifest {
     attributes 'Main-Class': project.mainClassName
   }
-// this last step may help on some OSes that need extra instruction to make runnable JARs.
+
   doLast {
     file(archiveFile).setExecutable(true, false)
   }
 }
 
-// Builds a JAR that only includes the files needed to run on macOS, not Windows or Linux.
-// The file size for a Mac-only JAR is about 7MB smaller than a cross-platform JAR.
+// jarMac, jarLinux, jarWin se quedan igual que los tenías,
+// solo asegúrate de que estén debajo del bloque jar{}:
+
 tasks.register("jarMac") {
   dependsOn("jar")
   group("build")
@@ -91,8 +112,6 @@ tasks.register("jarMac") {
   }
 }
 
-// Builds a JAR that only includes the files needed to run on Linux, not Windows or macOS.
-// The file size for a Linux-only JAR is about 5MB smaller than a cross-platform JAR.
 tasks.register("jarLinux") {
   dependsOn("jar")
   group("build")
@@ -105,8 +124,6 @@ tasks.register("jarLinux") {
   }
 }
 
-// Builds a JAR that only includes the files needed to run on Windows, not Linux or macOS.
-// The file size for a Windows-only JAR is about 6MB smaller than a cross-platform JAR.
 tasks.register("jarWin") {
   dependsOn("jar")
   group("build")
@@ -120,47 +137,36 @@ tasks.register("jarWin") {
 }
 
 construo {
-    // name of the executable
-    name.set(appName)
-    // human-readable name, used for example in the `.app` name for macOS
-    humanName.set(appName)
-    // Optional, defaults to project version property
-    version.set("$projectVersion")
+  name.set(appName)
+  humanName.set(appName)
+  version.set("$projectVersion")
 
-    targets.configure {
-      register("linuxX64", Target.Linux) {
-        architecture.set(Target.Architecture.X86_64)
-        jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_linux_hotspot_17.0.15_6.tar.gz")
-        // Linux does not currently have a way to set the icon on the executable
-      }
-      register("macM1", Target.MacOs) {
-        architecture.set(Target.Architecture.AARCH64)
-        jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.15_6.tar.gz")
-        // macOS needs an identifier
-        identifier.set("io.github.principal." + appName)
-        // Optional: icon for macOS, as an ICNS file
-        macIcon.set(project.file("icons/logo.icns"))
-      }
-      register("macX64", Target.MacOs) {
-        architecture.set(Target.Architecture.X86_64)
-        jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_mac_hotspot_17.0.15_6.tar.gz")
-        // macOS needs an identifier
-        identifier.set("io.github.principal." + appName)
-        // Optional: icon for macOS, as an ICNS file
-        macIcon.set(project.file("icons/logo.icns"))
-      }
-      register("winX64", Target.Windows) {
-        architecture.set(Target.Architecture.X86_64)
-        // Optional: icon for Windows, as a PNG
-        icon.set(project.file("icons/logo.png"))
-        jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_windows_hotspot_17.0.15_6.zip")
-        // Uncomment the next line to show a console when the game runs, to print messages.
-        //useConsole.set(true)
-      }
+  targets.configure {
+    register("linuxX64", Target.Linux) {
+      architecture.set(Target.Architecture.X86_64)
+      jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_linux_hotspot_17.0.15_6.tar.gz")
     }
+    register("macM1", Target.MacOs) {
+      architecture.set(Target.Architecture.AARCH64)
+      jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.15_6.tar.gz")
+      identifier.set("io.github.principal." + appName)
+      macIcon.set(project.file("icons/logo.icns"))
+    }
+    register("macX64", Target.MacOs) {
+      architecture.set(Target.Architecture.X86_64)
+      jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_mac_hotspot_17.0.15_6.tar.gz")
+      identifier.set("io.github.principal." + appName)
+      macIcon.set(project.file("icons/logo.icns"))
+    }
+    register("winX64", Target.Windows) {
+      architecture.set(Target.Architecture.X86_64)
+      icon.set(project.file("icons/logo.png"))
+      jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jdk_x64_windows_hotspot_17.0.15_6.zip")
+      // useConsole.set(true)
+    }
+  }
 }
 
-// Equivalent to the jar task; here for compatibility with gdx-setup.
 tasks.register('dist') {
   dependsOn 'jar'
 }
@@ -182,6 +188,6 @@ distributions {
 startScripts.dependsOn(':lwjgl3:jar')
 startScripts.classpath = project.tasks.jar.outputs.files
 
-if(enableGraalNative == 'true') {
+if (enableGraalNative == 'true') {
   apply from: file("nativeimage.gradle")
 }
