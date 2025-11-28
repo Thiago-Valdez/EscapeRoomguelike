@@ -2,63 +2,39 @@ package mapa;
 
 import java.util.*;
 
-/** Resultado de la generación: lista de colocaciones en una grilla lógica. */
-public final class DisposicionMapa {
+public class DisposicionMapa {
 
-    /** Una habitación colocada en la grilla (gx, gy). */
-    public static final class Colocacion {
+    public static class Colocacion {
         public final Habitacion habitacion;
-        public final int gx;
-        public final int gy;
+        public final int gx, gy;
 
-        public Colocacion(Habitacion habitacion, int gx, int gy) {
-            this.habitacion = habitacion;
+        public Colocacion(Habitacion h, int gx, int gy) {
+            this.habitacion = h;
             this.gx = gx;
             this.gy = gy;
         }
-
-        @Override public String toString() {
-            return habitacion.nombreVisible + " @(" + gx + "," + gy + ")";
-        }
     }
 
-    private final List<Colocacion> colocaciones = new ArrayList<>();
-    private final Map<String, Colocacion> porCelda = new HashMap<>();
+    private final Map<String, Colocacion> mapa = new HashMap<>();
+
+    private String key(int gx, int gy) {
+        return gx + "," + gy;
+    }
 
     public void agregar(Colocacion c) {
-        colocaciones.add(c);
-        porCelda.put(clave(c.gx, c.gy), c);
+        mapa.put(key(c.gx, c.gy), c);
     }
-
-    public Colocacion buscarPorGrid(int gx, int gy) {
-        for (Colocacion c : todas()) {
-            if (c.gx == gx && c.gy == gy) return c;
-        }
-        return null;
-    }
-
 
     public boolean ocupada(int gx, int gy) {
-        return porCelda.containsKey(clave(gx, gy));
+        return mapa.containsKey(key(gx, gy));
     }
 
-    public Colocacion en(int gx, int gy) {
-        return porCelda.get(clave(gx, gy));
+    public Collection<Colocacion> todas() {
+        return mapa.values();
     }
 
-    /** Lista inmutable de colocaciones en orden de generación. */
-    public List<Colocacion> todas() {
-        return Collections.unmodifiableList(colocaciones);
+    // ---------- 👇 MÉTODO QUE NECESITÁS PARA JUEGOPRINCIPAL ----------
+    public Colocacion buscar(int gx, int gy) {
+        return mapa.get(key(gx, gy));
     }
-
-    /** Devuelve un **array** de Habitacion en orden de generación (para debug). */
-    public Habitacion[] habitacionesComoArray() {
-        Habitacion[] arr = new Habitacion[colocaciones.size()];
-        for (int i = 0; i < colocaciones.size(); i++) {
-            arr[i] = colocaciones.get(i).habitacion;
-        }
-        return arr;
-    }
-
-    private static String clave(int gx, int gy) { return gx + ":" + gy; }
 }

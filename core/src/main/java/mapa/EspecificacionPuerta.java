@@ -1,7 +1,6 @@
 package mapa;
 
-/** Posición de una puerta en coordenadas locales de la habitación, y su dirección. */
-public final class EspecificacionPuerta {
+public class EspecificacionPuerta {
     public final Direccion direccion;
     public final int localX;
     public final int localY;

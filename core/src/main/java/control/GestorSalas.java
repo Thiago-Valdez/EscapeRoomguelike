@@ -49,7 +49,7 @@ public class GestorSalas {
         int nx = puerta.gx + dx(puerta.direccion);
         int ny = puerta.gy + dy(puerta.direccion);
 
-        DisposicionMapa.Colocacion vecina = disposicion.en(nx, ny);
+        DisposicionMapa.Colocacion vecina = disposicion.buscar(nx, ny);
         if (vecina == null) {
             System.out.println("[WARN] No hay sala vecina en dirección " + puerta.direccion + " desde (" + puerta.gx + "," + puerta.gy + ")");
             return;
