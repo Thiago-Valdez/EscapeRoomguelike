@@ -1,68 +1,89 @@
 package entidades;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.badlogic.gdx.physics.box2d.*;
+import java.util.*;
 
-public class Jugador extends Entidad {
+public class Jugador {
 
+    private final String nombre;
+
+    // Estética / apariencia
+    private Genero genero;
+    private Estilo estilo;
+
+    // Stats
     private int vida;
     private int vidaMaxima;
     private float velocidad;
-    private Genero genero;
-    private Estilo estilo;
-    private List<Item> objetos;
 
-    public Jugador(String nombre, Genero genero, Estilo estilo) {
-        super(nombre);          // 👈 ahora el nombre lo maneja Entidad
-        this.genero = genero;
-        this.estilo = estilo;
+    // Cuerpo físico en Box2D
+    private Body cuerpoFisico;
+
+    // Inventario simple (ítems pasivos)
+    private final List<Item> objetos = new ArrayList<>();
+
+    public Jugador(String nombre,
+                   Genero generoInicial,
+                   Estilo estiloInicial,
+                   World world,
+                   float x,
+                   float y) {
+
+        this.nombre = nombre;
+        this.genero = (generoInicial != null) ? generoInicial : Genero.MASCULINO;
+        this.estilo = (estiloInicial != null) ? estiloInicial : Estilo.CLASICO;
 
         this.vidaMaxima = 3;
-        this.vida = vidaMaxima;
-        this.velocidad = 120f;
-        this.objetos = new ArrayList<>();
+        this.vida = 3;
+        this.velocidad = 100f;
+
+        // ---- Crear cuerpo físico ----
+        BodyDef bd = new BodyDef();
+        bd.type = BodyDef.BodyType.DynamicBody;
+        bd.position.set(x, y);
+
+        cuerpoFisico = world.createBody(bd);
+        cuerpoFisico.setUserData(this); // útil para colisiones
+
+        PolygonShape shape = new PolygonShape();
+        // Ajustá el tamaño al sprite real
+        shape.setAsBox(16f, 24f);
+
+        FixtureDef fd = new FixtureDef();
+        fd.shape = shape;
+        fd.density = 1f;
+        fd.friction = 0.3f;
+
+        Fixture fx = cuerpoFisico.createFixture(fd);
+        fx.setUserData("jugador");
+
+        // 🔍 LOG DE CREACIÓN
+        com.badlogic.gdx.Gdx.app.log(
+            "Jugador",
+            "Body creado en (" + x + ", " + y + ") " +
+                "worldHash=" + System.identityHashCode(world) +
+                " bodyHash=" + System.identityHashCode(cuerpoFisico)
+        );
+
+        shape.dispose();
     }
 
-    // --- Vida ---
-    public int getVida() {
-        return vida;
+    // ------------------ Nombre ------------------
+
+    public String getNombre() {
+        return nombre;
     }
 
-    public int getVidaMaxima() {
-        return vidaMaxima;
-    }
+    // ------------------ Estética ------------------
 
-    public void setVidaMaxima(int vidaMaxima) {
-        this.vidaMaxima = Math.max(1, vidaMaxima);
-        if (vida > this.vidaMaxima) {
-            vida = this.vidaMaxima;
-        }
-    }
-
-    public void setVida(int vida) {
-        this.vida = Math.max(0, Math.min(vida, vidaMaxima));
-    }
-
-    public void sumarVida(int cantidad) {
-        setVida(this.vida + cantidad);
-    }
-
-    // --- Velocidad ---
-    public float getVelocidad() {
-        return velocidad;
-    }
-
-    public void setVelocidad(float velocidad) {
-        this.velocidad = velocidad;
-    }
-
-    // --- Genero / Estilo ---
     public Genero getGenero() {
         return genero;
     }
 
     public void setGenero(Genero genero) {
-        this.genero = genero;
+        if (genero != null) {
+            this.genero = genero;
+        }
     }
 
     public Estilo getEstilo() {
@@ -70,31 +91,80 @@ public class Jugador extends Entidad {
     }
 
     public void setEstilo(Estilo estilo) {
-        this.estilo = estilo;
-    }
-
-    // --- Objetos / Inventario ---
-    public List<Item> getObjetos() {
-        return objetos;
-    }
-
-    public void agregarObjeto(Item item) {
-        if (item != null) {
-            objetos.add(item);
+        if (estilo != null) {
+            this.estilo = estilo;
         }
     }
 
-    public void quitarObjeto(Item item) {
+    public String getClaveSpriteBase() {
+        return "player_" + genero.getSufijoSprite() + "_" + estilo.getSufijoSprite();
+    }
+
+    // ------------------ Stats ------------------
+
+    public int getVida() {
+        return vida;
+    }
+
+    public void setVida(int vida) {
+        if (vida < 0) vida = 0;
+        if (vida > vidaMaxima) vida = vidaMaxima;
+        this.vida = vida;
+    }
+
+    public int getVidaMaxima() {
+        return vidaMaxima;
+    }
+
+    public void setVidaMaxima(int vidaMaxima) {
+        if (vidaMaxima < 1) vidaMaxima = 1;
+        this.vidaMaxima = vidaMaxima;
+        if (vida > vidaMaxima) {
+            vida = vidaMaxima;
+        }
+    }
+
+    public float getVelocidad() {
+        return velocidad;
+    }
+
+    public void setVelocidad(float velocidad) {
+        if (velocidad < 0f) velocidad = 0f;
+        this.velocidad = velocidad;
+    }
+
+    // ------------------ Física ------------------
+
+    public Body getCuerpoFisico() {
+        return cuerpoFisico;
+    }
+
+    public void setCuerpoFisico(Body cuerpoFisico) {
+        this.cuerpoFisico = cuerpoFisico;
+    }
+
+    // ------------------ Inventario ------------------
+
+    public List<Item> getObjetos() {
+        return Collections.unmodifiableList(objetos);
+    }
+
+    public void agregarObjeto(Item item) {
+        if (item == null) return;
+        objetos.add(item);
+    }
+
+    public void removerObjeto(Item item) {
         objetos.remove(item);
     }
 
-    // --- Lógica por frame ---
-    @Override
-    public void actualizar(float delta) {
-        // Por ahora vacío.
-        // Más adelante podés:
-        //  - Actualizar efectos de estado
-        //  - Crunch de cooldowns
-        //  - Animaciones propias del jugador
+    public void reaplicarEfectosDeItems() {
+        this.vidaMaxima = 3;
+        if (vida > vidaMaxima) vida = vidaMaxima;
+        this.velocidad = 40f;
+
+        for (Item item : objetos) {
+            item.aplicarModificacion(this);
+        }
     }
 }

@@ -1,10 +1,8 @@
 package camara;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import mapa.DisposicionMapa;
 import mapa.Habitacion;
 
 /**
@@ -59,18 +57,27 @@ public class CamaraDeSala {
      * - factor ~ 0.5 -> muy suave (lento)
      */
     public void setFactorLerp(float factor) {
-        this.factorLerp = Math.max(0f, Math.min(0.99f, factor));
+        this.factorLerp = factor;
     }
 
     /**
-     * Centra instantáneamente la cámara en la Colocación dada.
+     * Centra instantáneamente la cámara en la habitación dada.
      */
-    public void centrarEn(DisposicionMapa.Colocacion col) {
-        float cx = centroX(col);
-        float cy = centroY(col);
-        this.objetivoX = cx;
-        this.objetivoY = cy;
-        camara.position.set(cx, cy, 0f);
+
+    /** Centra la cámara en el centro de una habitación (en píxeles). */
+    public void centrarEn(Habitacion habitacion) {
+        if (habitacion == null) return;
+
+        float cx = habitacion.gridX * habitacion.ancho + habitacion.ancho / 2f;
+        float cy = habitacion.gridY * habitacion.alto  + habitacion.alto  / 2f;
+
+        centrarEn(cx, cy);
+    }
+
+    public void centrarEn(float x, float y) {
+        this.objetivoX = x;
+        this.objetivoY = y;
+        camara.position.set(x, y, 0f);
         camara.update();
     }
 
@@ -78,9 +85,9 @@ public class CamaraDeSala {
      * Configura el objetivo y deja que el update haga el lerp.
      * Si factorLerp = 0, el resultado es equivalente a centrarEn (salto instantáneo).
      */
-    public void moverHacia(DisposicionMapa.Colocacion col) {
-        this.objetivoX = centroX(col);
-        this.objetivoY = centroY(col);
+    public void moverHacia(Habitacion habitacion) {
+        this.objetivoX = centroX(habitacion);
+        this.objetivoY = centroY(habitacion);
         if (factorLerp == 0f) {
             camara.position.set(objetivoX, objetivoY, 0f);
             camara.update();
@@ -91,25 +98,27 @@ public class CamaraDeSala {
      * Llamar una vez por frame (ej. en render()) si usás transición suave.
      */
     public void update(float delta) {
-        if (factorLerp > 0f) {
-            float x = camara.position.x + (objetivoX - camara.position.x) * (1f - factorLerp);
-            float y = camara.position.y + (objetivoY - camara.position.y) * (1f - factorLerp);
-            camara.position.set(x, y, 0f);
-            camara.update();
+        if (factorLerp <= 0f) {
+            // Snap duro al objetivo
+            camara.position.set(objetivoX, objetivoY, 0f);
+        } else {
+            camara.position.x += (objetivoX - camara.position.x) * factorLerp * delta;
+            camara.position.y += (objetivoY - camara.position.y) * factorLerp * delta;
         }
+        camara.update();
     }
 
     // ==== Cálculo de centro de habitación en mundo ====
 
-    private static float centroX(DisposicionMapa.Colocacion c) {
-        Habitacion h = c.habitacion;
-        float worldX = c.gx * h.ancho;
+    private static float centroX(Habitacion h) {
+        float worldX = h.gridX * h.ancho;
         return worldX + h.ancho * 0.5f;
     }
 
-    private static float centroY(DisposicionMapa.Colocacion c) {
-        Habitacion h = c.habitacion;
-        float worldY = c.gy * h.alto;
+    private static float centroY(Habitacion h) {
+        float worldY = h.gridY * h.alto;
         return worldY + h.alto * 0.5f;
     }
+
+
 }

@@ -1,25 +1,35 @@
 package fisica;
 
 import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.math.Vector2;
 
+/**
+ * Fábrica de cuerpos Box2D trabajando directamente en UNIDADES DE PÍXELES.
+ *
+ * Ojo: Box2D recomienda trabajar en metros, pero como todo tu juego
+ * (cámara, Tiled, etc.) está en píxeles, acá también usamos píxeles para
+ * que todo alinee visualmente.
+ */
 public class FabricaCuerpos {
 
     private final World world;
 
-    public FabricaCuerpos(World world) { this.world = world; }
+    public FabricaCuerpos(World world) {
+        this.world = world;
+    }
 
-    /** Crea un cuerpo dinámico circular para el jugador. */
+    /** Crea un cuerpo dinámico circular para el jugador. Coordenadas en píxeles. */
     public Body crearJugador(float xPx, float yPx, float radioPx) {
         BodyDef bd = new BodyDef();
         bd.type = BodyDef.BodyType.DynamicBody;
-        bd.position.set(px2m(xPx), px2m(yPx));
+        // posición en píxeles
+        bd.position.set(xPx, yPx);
         bd.fixedRotation = true;
 
         Body body = world.createBody(bd);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(px2m(radioPx));
+        // radio en píxeles
+        shape.setRadius(radioPx);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
@@ -34,16 +44,18 @@ public class FabricaCuerpos {
         return body;
     }
 
-    /** Crea una pared rectangular (estática). */
+    /** Crea una pared rectangular (estática). Coordenadas/tamaño en píxeles. */
     public Body crearPared(float xPx, float yPx, float anchoPx, float altoPx) {
         BodyDef bd = new BodyDef();
         bd.type = BodyDef.BodyType.StaticBody;
-        bd.position.set(px2m(xPx + anchoPx/2f), px2m(yPx + altoPx/2f)); // centro
+        // Box2D posiciona el cuerpo en el centro de la shape
+        bd.position.set(xPx + anchoPx / 2f, yPx + altoPx / 2f);
 
         Body body = world.createBody(bd);
 
         PolygonShape box = new PolygonShape();
-        box.setAsBox(px2m(anchoPx/2f), px2m(altoPx/2f));
+        // setAsBox recibe halfWidth / halfHeight
+        box.setAsBox(anchoPx / 2f, altoPx / 2f);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = box;
@@ -56,16 +68,20 @@ public class FabricaCuerpos {
         return body;
     }
 
-    /** Crea una puerta como SENSOR (no bloquea, solo detecta contacto). */
+    /**
+     * Crea una puerta como SENSOR (no bloquea, solo detecta contacto).
+     * Coordenadas/tamaño en píxeles.
+     */
     public Body crearPuertaSensor(float xPx, float yPx, float anchoPx, float altoPx, Object userDataPuerta) {
         BodyDef bd = new BodyDef();
         bd.type = BodyDef.BodyType.StaticBody;
-        bd.position.set(px2m(xPx + anchoPx/2f), px2m(yPx + altoPx/2f)); // centro
+        // centro de la puerta
+        bd.position.set(xPx + anchoPx / 2f, yPx + altoPx / 2f);
 
         Body body = world.createBody(bd);
 
         PolygonShape box = new PolygonShape();
-        box.setAsBox(px2m(anchoPx/2f), px2m(altoPx/2f));
+        box.setAsBox(anchoPx / 2f, altoPx / 2f);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = box;
@@ -74,11 +90,8 @@ public class FabricaCuerpos {
         fd.filter.maskBits = BitsColision.MASCARA_PUERTA;
 
         Fixture fx = body.createFixture(fd);
-        fx.setUserData(userDataPuerta); // ej.: "HAB:Inicio 1 -> ESTE"
+        fx.setUserData(userDataPuerta); // ej.: DatosPuerta
         box.dispose();
         return body;
     }
-
-    private static float px2m(float px) { return px / FisicaMundo.PPM; }
-    public  static float m2px(float m)  { return m * FisicaMundo.PPM; }
 }

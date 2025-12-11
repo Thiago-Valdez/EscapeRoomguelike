@@ -1,116 +1,128 @@
 package control;
 
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.math.Vector2;
 import camara.CamaraDeSala;
-import fisica.*;
-import mapa.*;
-
-import java.util.ArrayList;
-import java.util.List;
+import entidades.Jugador;
+import fisica.FisicaMundo;
+import mapa.DisposicionMapa;
+import mapa.DatosPuerta;
+import mapa.Direccion;
+import mapa.EspecificacionPuerta;
+import mapa.Habitacion;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.physics.box2d.Body;
 
 public class GestorSalas {
 
     private final DisposicionMapa disposicion;
-    private final FisicaMundo fisica;
-    private final FabricaCuerpos fabrica;
-    private final SistemaColisiones sistemaColisiones;
     private final CamaraDeSala camara;
+    private final Jugador jugador;
 
-    private DisposicionMapa.Colocacion salaActual;
-    private final List<Body> cuerposSala = new ArrayList<>();
+    private Habitacion salaActual;
 
     public GestorSalas(DisposicionMapa disposicion,
                        FisicaMundo fisica,
                        CamaraDeSala camara,
-                       DisposicionMapa.Colocacion salaInicial) {
+                       Habitacion salaInicial,
+                       Jugador jugador) {
+
         this.disposicion = disposicion;
-        this.fisica = fisica;
-        this.fabrica = new FabricaCuerpos(fisica.world());
-        this.sistemaColisiones = new SistemaColisiones(fabrica);
         this.camara = camara;
-        entrarSala(salaInicial);
+        this.jugador = jugador;
+
+        this.salaActual = salaInicial;
+
+        if (camara != null)
+            camara.centrarEn(salaInicial);
+
+        Gdx.app.log("SALA", "Sala inicial: " + salaInicial.nombreVisible +
+            " @(" + salaInicial.gridX + "," + salaInicial.gridY + ")");
     }
 
-    /** Construye paredes/puertas de la sala y centra cámara. */
-    public void entrarSala(DisposicionMapa.Colocacion sala) {
-        limpiarSalaActual();
-        salaActual = sala;
-        cuerposSala.addAll(sistemaColisiones.construirParaSala(salaActual));
-        camara.moverHacia(salaActual); // o centrarEn(...) si querés snap
-        System.out.println("[SALA] Entraste a: " + sala.habitacion.nombreVisible + " @(" + sala.gx + "," + sala.gy + ")");
+    public Habitacion getSalaActual() {
+        return salaActual;
     }
 
-    /** Llamado por ContactListener cuando el jugador toca una puerta. */
+    /** Cambio de sala cuando el jugador toca una puerta */
     public void irASalaVecinaPorPuerta(DatosPuerta puerta, Body cuerpoJugador) {
-        // Calcular la celda vecina:
-        int nx = puerta.gx + dx(puerta.direccion);
-        int ny = puerta.gy + dy(puerta.direccion);
 
-        DisposicionMapa.Colocacion vecina = disposicion.buscar(nx, ny);
-        if (vecina == null) {
-            System.out.println("[WARN] No hay sala vecina en dirección " + puerta.direccion + " desde (" + puerta.gx + "," + puerta.gy + ")");
+        Habitacion origen  = puerta.origen();
+        Habitacion destino = puerta.destino();
+        Direccion dirSalida = puerta.direccion(); // hacia dónde sale
+
+        Habitacion nuevaSala;
+        Direccion dirEntrada; // por dónde entra a la siguiente
+
+        // Si estoy saliendo desde la sala actual
+        if (salaActual == origen) {
+            nuevaSala = destino;
+            dirEntrada = dirSalida.opuesta();
+
+            // Si el sensor detectó desde el otro lado
+        } else if (salaActual == destino) {
+            nuevaSala = origen;
+            dirEntrada = dirSalida.opuesta();
+
+        } else {
+            Gdx.app.log("GestorSalas",
+                "ERROR: puerta no pertenece a salaActual=" + salaActual.nombreVisible);
             return;
         }
 
-        // Entrar a la sala vecina
-        entrarSala(vecina);
+        // Cambiar sala
+        salaActual = nuevaSala;
 
-        // Reubicar jugador en la puerta opuesta dentro de la nueva sala
-        Direccion op = puerta.direccion.opuesta();
-        EspecificacionPuerta ep = vecina.habitacion.puertas.get(op);
+        // Colocar al jugador en la sala nueva por la puerta opuesta
+        colocarJugadorEnSalaPorPuerta(nuevaSala, dirEntrada, cuerpoJugador);
+
+        // Centrar la cámara en la sala nueva
+        camara.centrarEn(nuevaSala);
+
+        Gdx.app.log("SALA", "Entraste a: " + nuevaSala.nombreVisible +
+            " @(" + nuevaSala.gridX + "," + nuevaSala.gridY + ")");
+    }
+
+
+    /** Posiciona al jugador según la puerta por la que entra */
+    private void colocarJugadorEnSalaPorPuerta(Habitacion sala,
+                                               Direccion entrada,
+                                               Body cuerpoJugador) {
+
+        float baseX = sala.gridX * sala.ancho;
+        float baseY = sala.gridY * sala.alto;
+
+        EspecificacionPuerta ep = sala.puertas.get(entrada);
+        float px, py;
+
         if (ep == null) {
-            // fallback: centro de la sala
-            float cx = vecina.gx * vecina.habitacion.ancho + vecina.habitacion.ancho / 2f;
-            float cy = vecina.gy * vecina.habitacion.alto  + vecina.habitacion.alto  / 2f;
-            cuerpoJugador.setTransform(cx / FisicaMundo.PPM, cy / FisicaMundo.PPM, 0);
-            System.out.println("[REUBICACION] No hay puerta opuesta; movido al centro.");
-        } else {
-            // offset pequeño hacia adentro de la sala (para “aparecer” dentro)
-            float offset = 48f;
-            float baseX = vecina.gx * vecina.habitacion.ancho;
-            float baseY = vecina.gy * vecina.habitacion.alto;
-            float px = baseX + ep.localX;
-            float py = baseY + ep.localY;
-
-            switch (op) {
-                case NORTE -> py -= offset;
-                case SUR   -> py += offset;
-                case ESTE  -> px -= offset;
-                case OESTE -> px += offset;
-            }
-
-            cuerpoJugador.setLinearVelocity(Vector2.Zero);
-            cuerpoJugador.setTransform(px / FisicaMundo.PPM, py / FisicaMundo.PPM, 0);
-            System.out.println("[REUBICACION] Jugador colocado en puerta opuesta (" + op + ") de " + vecina.habitacion.nombreVisible);
+            // fallback si la sala no definió ese borde
+            px = baseX + sala.ancho / 2f;
+            py = baseY + sala.alto / 2f;
+            cuerpoJugador.setTransform(px, py, 0);
+            return;
         }
-    }
 
-    private void limpiarSalaActual() {
-        if (!cuerposSala.isEmpty()) {
-            World w = fisica.world();
-            for (Body b : cuerposSala) w.destroyBody(b);
-            cuerposSala.clear();
+        // posición EXACTA de la puerta
+        px = baseX + ep.localX;
+        py = baseY + ep.localY;
+
+        // pequeño offset hacia adentro para evitar re-disparo del sensor
+        float offset = 40f;
+        switch (entrada) {
+            case NORTE -> py -= offset;
+            case SUR   -> py += offset;
+            case ESTE  -> px -= offset;
+            case OESTE -> px += offset;
         }
-    }
 
-    private static int dx(Direccion d) {
-        return switch (d) {
-            case ESTE -> 1;
-            case OESTE -> -1;
-            default -> 0;
-        };
-    }
+        // Reposicionar jugador
+        cuerpoJugador.setLinearVelocity(0, 0);
+        cuerpoJugador.setTransform(px, py, 0);
 
-    private static int dy(Direccion d) {
-        return switch (d) {
-            case NORTE -> 1;
-            case SUR -> -1;
-            default -> 0;
-        };
-    }
+        if (jugador != null)
+            jugador.setCuerpoFisico(cuerpoJugador);
 
-    public DisposicionMapa.Colocacion salaActual() { return salaActual; }
+        Gdx.app.log("REUBICACION",
+            "Jugador colocado por " + entrada +
+                " en (" + px + "," + py + ")");
+    }
 }

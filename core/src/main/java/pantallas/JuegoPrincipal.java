@@ -1,310 +1,325 @@
 package pantallas;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import camara.CamaraDeSala;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import entidades.GestorDeEntidades;
+import control.GestorSalas;
+import entidades.ControlJugador;
+import entidades.Genero;
 import entidades.Jugador;
+import entidades.GestorDeEntidades;
+import entidades.Estilo;
+import fisica.ColisionesDesdeTiled;
 import fisica.FisicaMundo;
 import fisica.GeneradorParedesSalas;
+import interfaces.HudJuego;
 import io.github.principal.Principal;
 import mapa.*;
-import interfaces.HudJuego;
 
-import java.util.*;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 public class JuegoPrincipal implements Screen {
 
     private final Principal game;
 
-    // Cámara del mundo
-    private OrthographicCamera camara;
-
-    // Física
+    // --- Mundo físico (único) ---
+    private World world;
     private FisicaMundo fisica;
-    private ShapeRenderer shapeMundo; // debug visual del jugador
 
-    // Mapa
-    private GeneradorMapa generador;
+    // --- Render básico ---
+    private SpriteBatch batch;
+
+    // --- Mapa Tiled ---
+    private TiledMap mapaTiled;
+    private OrthogonalTiledMapRenderer mapaRenderer;
+
+    // --- Cámara de sala ---
+    private CamaraDeSala camaraSala;
+
+    // --- Mapa lógico / camino ---
     private DisposicionMapa disposicion;
-    private DisposicionMapa.Colocacion salaActual;
-    private final Set<DisposicionMapa.Colocacion> salasDescubiertas = new HashSet<>();
+    private Habitacion salaActual;
 
-    // Gestor de entidades (jugador + pickups)
+    // --- Gestión de salas (cambio de habitación + cámara) ---
+    private GestorSalas gestorSalas;
+
+    // --- Jugador + control ---
+    private Jugador jugador;
+    private ControlJugador controlJugador;
     private GestorDeEntidades gestorEntidades;
 
-    // HUD
+    // --- HUD ---
     private HudJuego hud;
 
-    // Offset seguro desde la pared para spawnear al jugador al cambiar de sala
-    private float safeOffsetFromWall;
+    // --- Cola de puertas tocadas (para evitar modificar Box2D dentro del callback) ---
+    private final List<DatosPuerta> puertasPendientes = new ArrayList<>();
 
-    // ----- Datos de puertas -----
-    public static class DatosPuerta {
-        public final DisposicionMapa.Colocacion origen;
-        public final DisposicionMapa.Colocacion destino;
-        public final Direccion direccion;
+    // --- Flags ---
+    private boolean debugFisica = true;
 
-        public DatosPuerta(DisposicionMapa.Colocacion origen,
-                           DisposicionMapa.Colocacion destino,
-                           Direccion direccion) {
-            this.origen = origen;
-            this.destino = destino;
-            this.direccion = direccion;
-        }
-    }
-
-    private final Map<Fixture, DatosPuerta> puertaPorFixture = new HashMap<>();
-    private DatosPuerta puertaPendiente; // se procesa después de world.step()
+    // Cooldown para evitar ping-pong de puertas
+    private int framesBloqueoPuertas = 0;
 
     public JuegoPrincipal(Principal game) {
         this.game = game;
+        // No creamos World ni cosas pesadas acá; todo va en show().
     }
 
     @Override
     public void show() {
-        // Cámara del mundo (tamaño de una habitación)
-        camara = new OrthographicCamera();
-        camara.setToOrtho(false, 512, 512);
+        // 1) Render básico
+        batch = new SpriteBatch();
 
-        shapeMundo = new ShapeRenderer();
-        shapeMundo.setColor(Color.YELLOW);
-
-        // ----- Generar mapa -----
+        // 2) Generar mapa lógico (camino de habitaciones)
         GeneradorMapa.Configuracion cfg = new GeneradorMapa.Configuracion();
         cfg.nivel = 1;
-        generador = new GeneradorMapa(cfg);
+        cfg.semilla = System.currentTimeMillis(); // o una fija si querés repetir niveles
+
+        // 2.1) Lista de TODAS las habitaciones definidas en el enum
+        List<Habitacion> todasLasHabitaciones = Arrays.asList(Habitacion.values());
+
+        // 2.2) Grafo de puertas (todas las conexiones lógicas posibles)
+        GrafoPuertas grafo = new GrafoPuertas(todasLasHabitaciones, new Random(cfg.semilla));
+
+        // 2.3) Generador de mapa que usa ese grafo
+        GeneradorMapa generador = new GeneradorMapa(cfg, grafo);
         disposicion = generador.generar();
 
-        salaActual = buscarPrimeraSalaDeTipo(disposicion, TipoSala.INICIO);
-        if (salaActual == null) {
-            throw new IllegalStateException("No se encontró sala de inicio.");
-        }
+        // Sala inicial = INICIO_1 y la marcamos como descubierta
+        salaActual = disposicion.salaInicio();
+        disposicion.descubrir(salaActual);
 
-        salasDescubiertas.clear();
-        salasDescubiertas.add(salaActual);
+        // 3) Cámara de sala (una habitación = 512x512 px)
+        camaraSala = new CamaraDeSala(512f, 512f);
+        camaraSala.setFactorLerp(0f); // snap instantáneo
+        camaraSala.centrarEn(salaActual);
 
-        // ----- Física -----
-        fisica = new FisicaMundo();
+        // 4) Mundo físico (Box2D, un solo World para todo)
+        world = new World(new Vector2(0, 0), true);
+        Gdx.app.log("JuegoPrincipal", "World principal hash=" + System.identityHashCode(world));
 
-        // ----- Gestor de entidades -----
-        gestorEntidades = new GestorDeEntidades(fisica, disposicion);
-        gestorEntidades.crearJugadorEnSalaInicial(salaActual);
-        gestorEntidades.crearPickupsEnSalasBotin();
+        // ⚠️ Asegurate de que FisicaMundo use *este* world, y NO cree uno nuevo adentro.
+        fisica = new FisicaMundo(world);
 
-        // Calculamos offset seguro usando el radio del jugador
-        safeOffsetFromWall =
-            GeneradorParedesSalas.WALL_THICKNESS
-                + GeneradorParedesSalas.DOOR_WIDTH / 2f
-                + gestorEntidades.getPlayerRadius()
-                + 4f;
+        // 5) Mapa Tiled (arte)
+        mapaTiled = new TmxMapLoader().load("TMX/mapa.tmx");
+        mapaRenderer = new OrthogonalTiledMapRenderer(mapaTiled, 1f);
 
-        // ----- Paredes + sensores de puertas -----
-        GeneradorParedesSalas generadorParedes = new GeneradorParedesSalas(fisica, disposicion);
-        generadorParedes.generar((fixture, origen, destino, dir) -> {
+        // Colisiones dibujadas en Tiled (capa "colision")
+        ColisionesDesdeTiled.crearColisiones(mapaTiled, world);
+
+        // 6) Generar paredes + sensores de puertas SOLO para las salas del camino
+        GeneradorParedesSalas genParedes =
+            new GeneradorParedesSalas(fisica, disposicion, grafo);
+
+        // ListenerPuerta -> acá es donde asociamos DatosPuerta a cada fixture de sensor
+        genParedes.generar((fixture, origen, destino, dir) -> {
             DatosPuerta datos = new DatosPuerta(origen, destino, dir);
             fixture.setUserData(datos);
-            puertaPorFixture.put(fixture, datos);
         });
 
-        // ----- ContactListener (puertas + pickups) -----
-        configurarContactListener();
+        // 7) Calcular posición inicial del jugador (centro de salaActual)
+        float baseX = salaActual.gridX * salaActual.ancho;
+        float baseY = salaActual.gridY * salaActual.alto;
+        float px = baseX + salaActual.ancho / 2f;
+        float py = baseY + salaActual.alto / 2f;
 
-        // ----- HUD -----
-        Jugador jugador = gestorEntidades.getJugador();
-        hud = new HudJuego(disposicion, salaActual, salasDescubiertas, jugador);
+        // 8) Crear jugador (stats + estética + cuerpo físico en este World)
+        jugador = new Jugador(
+            "Jugador 1",
+            Genero.MASCULINO,
+            Estilo.CLASICO,
+            world,
+            px,
+            py
+        );
 
-        System.out.println("[JuegoPrincipal] show() listo");
-    }
+        Vector2 pos = jugador.getCuerpoFisico().getPosition();
+        camaraSala.centrarEn(pos.x, pos.y);
 
-    // ---------------------------------------------------------
-    // ContactListener (puertas + pickups)
-    // ---------------------------------------------------------
-    private void configurarContactListener() {
+        // 9) Gestor de entidades
+        gestorEntidades = new GestorDeEntidades(world, jugador);
+
+        // 10) Control de jugador (input)
+        controlJugador = new ControlJugador(jugador, jugador.getCuerpoFisico());
+
+        // 11) Gestor de salas (lógica de cambio de sala + cámara)
+        gestorSalas = new GestorSalas(disposicion, fisica, camaraSala, salaActual, jugador);
+
+        // 12) HUD
+        hud = new HudJuego(disposicion, jugador);
+        hud.actualizarSalaActual(salaActual);
+
+        // 13) ContactListener (puertas + items)
         fisica.setContactListener(new ContactListener() {
             @Override
             public void beginContact(Contact contact) {
                 Fixture a = contact.getFixtureA();
                 Fixture b = contact.getFixtureB();
-                procesarContacto(a, b);
-                procesarContacto(b, a);
+                manejarContacto(a);
+                manejarContacto(b);
             }
 
-            @Override public void endContact(Contact contact) { }
-            @Override public void preSolve(Contact contact, Manifold oldManifold) { }
-            @Override public void postSolve(Contact contact, ContactImpulse impulse) { }
+            @Override public void endContact(Contact contact) {}
+            @Override public void preSolve(Contact contact, Manifold oldManifold) {}
+            @Override public void postSolve(Contact contact, ContactImpulse impulse) {}
         });
     }
 
-    private void procesarContacto(Fixture fA, Fixture fB) {
-        if (!(fA.getUserData() instanceof Jugador)) return;
-        Object data = fB.getUserData();
 
-        if (data instanceof DatosPuerta datos) {
-            // Marcar puerta para procesar luego de world.step()
-            puertaPendiente = datos;
-        } else if (gestorEntidades != null && gestorEntidades.esPickup(data)) {
-            gestorEntidades.marcarPickupRecogido(data);
+    /** Encola contactos; no modificamos Box2D dentro del callback. */
+    private void manejarContacto(Fixture fixture) {
+        if (fixture == null) return;
+
+        // Si estamos en cooldown, ignoramos contactos de puertas
+        if (framesBloqueoPuertas > 0) return;
+
+        Object ud = fixture.getUserData();
+        if (ud instanceof DatosPuerta puerta) {
+            puertasPendientes.add(puerta);
         }
+
+        // Aquí podrías manejar también ítems, encolando su recogida.
     }
 
-    // ---------------------------------------------------------
-    // Render / loop principal
-    // ---------------------------------------------------------
+
+    /**
+     * Procesa la cola de puertas *después* del world.step().
+     * Solo procesa UNA puerta por frame y activa un cooldown
+     * para evitar ping-pong inmediato.
+     */
+    private void procesarPuertasPendientes() {
+        if (puertasPendientes.isEmpty()) return;
+
+        // Si todavía estamos bloqueando puertas, tiramos la cola y salimos
+        if (framesBloqueoPuertas > 0) {
+            puertasPendientes.clear();
+            return;
+        }
+
+        Body cuerpoJugador = jugador.getCuerpoFisico();
+        if (cuerpoJugador == null) {
+            puertasPendientes.clear();
+            return;
+        }
+
+        // Procesamos SOLO la primera puerta detectada
+        DatosPuerta puerta = puertasPendientes.get(0);
+
+        System.out.println("[JuegoPrincipal] Cambio de sala: "
+            + puerta.origen().nombreVisible + " por " + puerta.direccion());
+
+        // GestorSalas se encarga de cambiar sala + cámara + reposicionar jugador
+        gestorSalas.irASalaVecinaPorPuerta(puerta, cuerpoJugador);
+
+        // Actualizamos referencia de sala actual desde GestorSalas
+        Habitacion nueva = gestorSalas.getSalaActual();
+        if (nueva != null) {
+            salaActual = nueva;
+            disposicion.descubrir(salaActual);
+            hud.actualizarSalaActual(salaActual);
+        }
+
+        // Activamos cooldown (~0.25s si vas a 60 FPS)
+        framesBloqueoPuertas = 15;
+
+        // Limpiamos la cola
+        puertasPendientes.clear();
+    }
+
+
     @Override
     public void render(float delta) {
-        // 1) Input / movimiento del jugador
-        if (gestorEntidades != null) {
-            gestorEntidades.actualizarMovimientoJugador();
+        if (world == null) return; // por seguridad
+
+        // 1) Actualizar lógica de entidades (IA, timers, ítems en BOTIN, etc.)
+        gestorEntidades.actualizar(delta, salaActual);
+
+        // 2) Actualizar jugador (input -> velocidad del body)
+        if (controlJugador != null) {
+            controlJugador.actualizar(delta);
         }
 
-        // 2) Paso de física
+        // 3) Paso de física (world.step por dentro de FisicaMundo)
         fisica.step();
 
-        // 3) Cambios de sala después del step
-        if (puertaPendiente != null) {
-            onJugadorEntraPuerta(puertaPendiente);
-            puertaPendiente = null;
-        }
+        // 4) Procesar cambios de sala fuera del callback de Box2D
+        procesarPuertasPendientes();
 
-        // 4) Procesar pickups recogidos (aplica ítems al jugador)
-        if (gestorEntidades != null) {
-            gestorEntidades.procesarPickupsPendientes();
+
+        // Reducir cooldown de puertas
+        if (framesBloqueoPuertas > 0) {
+            framesBloqueoPuertas--;
         }
 
         // 5) Limpiar pantalla
-        Gdx.gl.glClearColor(0, 0, 0, 1f);
+        Gdx.gl.glClearColor(0.05f, 0.05f, 0.07f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 6) Cámara centrada en la sala actual
-        if (salaActual != null) {
-            Habitacion h = salaActual.habitacion;
-            float cx = salaActual.gx * h.ancho + h.ancho / 2f;
-            float cy = salaActual.gy * h.alto + h.alto / 2f;
-            camara.position.set(cx, cy, 0);
-        }
-        camara.update();
+        // 6) Actualizar cámara (lerp si está activado)
+        camaraSala.update(delta);
 
-        // 7) Debug de Box2D
-        fisica.debugDraw(camara);
-
-        // 8) Dibujar al jugador como círculo amarillo (debug visual)
-        Body jugadorBody = (gestorEntidades != null) ? gestorEntidades.getJugadorBody() : null;
-        if (jugadorBody != null) {
-            shapeMundo.setProjectionMatrix(camara.combined);
-            shapeMundo.begin(ShapeRenderer.ShapeType.Line);
-            shapeMundo.setColor(Color.YELLOW);
-            float x = jugadorBody.getPosition().x;
-            float y = jugadorBody.getPosition().y;
-            shapeMundo.circle(x, y, gestorEntidades.getPlayerRadius());
-            shapeMundo.end();
+        // 7) Dibujar mapa Tiled
+        if (mapaRenderer != null) {
+            mapaRenderer.setView(camaraSala.getCamara());
+            mapaRenderer.render();
         }
 
-        // 9) HUD
+        // 8) Dibujar entidades (jugador, ítems, etc.)
+        batch.setProjectionMatrix(camaraSala.getCamara().combined);
+        batch.begin();
+        gestorEntidades.render(batch);
+        batch.end();
+
+        // 9) Debug de Box2D
+        if (debugFisica) {
+            fisica.debugDraw(camaraSala.getCamara());
+            //fisica.debugLogJugador(); // dejalo mientras estés debuggeando
+        }
+
+        // 10) HUD
         if (hud != null) {
             hud.render();
         }
     }
 
-    // ---------------------------------------------------------
-    // Cambio de sala al atravesar una puerta
-    // ---------------------------------------------------------
-    private void onJugadorEntraPuerta(DatosPuerta puerta) {
-        salaActual = puerta.destino;
-        salasDescubiertas.add(salaActual);
-
-        Habitacion hDest = salaActual.habitacion;
-        Direccion entrada = puerta.direccion.opuesta(); // lado por el que ENTRAMOS a la nueva sala
-        EspecificacionPuerta p = hDest.puertas.get(entrada);
-
-        float baseX = salaActual.gx * hDest.ancho;
-        float baseY = salaActual.gy * hDest.alto;
-
-        float spawnX;
-        float spawnY;
-
-        if (p == null) {
-            // fallback: centro de la sala si falta definición de puerta de entrada
-            spawnX = baseX + hDest.ancho / 2f;
-            spawnY = baseY + hDest.alto / 2f;
-        } else {
-            switch (entrada) {
-                case NORTE -> {
-                    spawnX = baseX + p.localX;
-                    spawnY = baseY + hDest.alto - safeOffsetFromWall;
-                }
-                case SUR -> {
-                    spawnX = baseX + p.localX;
-                    spawnY = baseY + safeOffsetFromWall;
-                }
-                case ESTE -> {
-                    spawnX = baseX + hDest.ancho - safeOffsetFromWall;
-                    spawnY = baseY + p.localY;
-                }
-                case OESTE -> {
-                    spawnX = baseX + safeOffsetFromWall;
-                    spawnY = baseY + p.localY;
-                }
-                default -> {
-                    spawnX = baseX + hDest.ancho / 2f;
-                    spawnY = baseY + hDest.alto / 2f;
-                }
-            }
+    @Override
+    public void resize(int width, int height) {
+        if (camaraSala != null) {
+            camaraSala.getViewport().update(width, height, true);
         }
-
-        if (gestorEntidades != null) {
-            gestorEntidades.moverJugadorA(spawnX, spawnY);
-        }
-
         if (hud != null) {
-            hud.setSalaActual(salaActual);
+            hud.resize(width, height);
         }
-
-        System.out.println("[JuegoPrincipal] Cambio a sala: " +
-            salaActual.habitacion.nombreVisible + " (" +
-            salaActual.gx + "," + salaActual.gy + ")");
     }
 
-    // ---------------------------------------------------------
-    // Utilidades
-    // ---------------------------------------------------------
-    private DisposicionMapa.Colocacion buscarPrimeraSalaDeTipo(DisposicionMapa disp, TipoSala tipo) {
-        for (DisposicionMapa.Colocacion c : disp.todas()) {
-            if (c.habitacion.tipo == tipo) return c;
-        }
-        return null;
-    }
+    @Override public void pause() {}
+    @Override public void resume() {}
 
-    private static int dx(Direccion d) {
-        return switch (d) {
-            case ESTE -> 1;
-            case OESTE -> -1;
-            default -> 0;
-        };
+    @Override
+    public void hide() {
+        dispose();
     }
-
-    private static int dy(Direccion d) {
-        return switch (d) {
-            case NORTE -> 1;
-            case SUR   -> -1;
-            default -> 0;
-        };
-    }
-
-    // ---------------------------------------------------------
-    @Override public void resize(int width, int height) { }
-    @Override public void pause() { }
-    @Override public void resume() { }
-    @Override public void hide() { }
 
     @Override
     public void dispose() {
-        if (shapeMundo != null) shapeMundo.dispose();
+        if (mapaRenderer != null) mapaRenderer.dispose();
+        if (mapaTiled != null) mapaTiled.dispose();
+        if (batch != null) batch.dispose();
         if (fisica != null) fisica.dispose();
+        // Si FisicaMundo NO se encarga de dispose del World, entonces:
+        // if (world != null) world.dispose();
         if (hud != null) hud.dispose();
     }
 }

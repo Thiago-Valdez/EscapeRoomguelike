@@ -2,55 +2,68 @@ package entidades;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 
 /**
- * Se encarga de leer el input y mover al jugador usando su Body de Box2D.
+ * Encargado de leer el input y mover al jugador (su Body de Box2D).
+ * El Jugador guarda los stats (velocidad, vida, etc.), y acá solo
+ * usamos la velocidad y el Body físico.
  */
 public class ControlJugador {
 
-    private Jugador jugador;
+    private final Jugador jugador;
     private Body cuerpo;
+    private final Vector2 direccion = new Vector2();
 
     public ControlJugador(Jugador jugador, Body cuerpo) {
         this.jugador = jugador;
         this.cuerpo = cuerpo;
     }
 
-    public void setJugador(Jugador jugador) {
-        this.jugador = jugador;
+    /**
+     * Llamar cada frame desde GestorDeEntidades.actualizar().
+     */
+    public void actualizar(float delta) {
+        if (cuerpo == null) return;
+
+        leerInput();
+
+        if (direccion.isZero()) {
+            cuerpo.setLinearVelocity(0, 0);
+            return;
+        }
+
+        float vel = jugador.getVelocidad();
+        //System.out.println("dir=" + direccion + " vel=" + vel);
+        direccion.nor().scl(vel);
+        cuerpo.setLinearVelocity(direccion);
+    }
+
+
+    private void leerInput() {
+        direccion.set(0, 0);
+
+        // WASD o flechas
+        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
+            direccion.y += 1;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+            direccion.y -= 1;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            direccion.x -= 1;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            direccion.x += 1;
+        }
     }
 
     public void setCuerpo(Body cuerpo) {
         this.cuerpo = cuerpo;
     }
 
-    /**
-     * Llamar una vez por frame desde JuegoPrincipal.render().
-     */
-    public void actualizarMovimiento() {
-        if (jugador == null || cuerpo == null) return;
-
-        float vx = 0f;
-        float vy = 0f;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) vy += 1f;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) vy -= 1f;
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) vx -= 1f;
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) vx += 1f;
-
-        if (vx == 0 && vy == 0) {
-            cuerpo.setLinearVelocity(0, 0);
-            return;
-        }
-
-        // Velocidad tomada del jugador (afectada por ítems)
-        float speed = jugador.getVelocidad();
-
-        float len = (float) Math.sqrt(vx * vx + vy * vy);
-        vx /= len;
-        vy /= len;
-
-        cuerpo.setLinearVelocity(vx * speed, vy * speed);
+    public Body getCuerpo() {
+        return cuerpo;
     }
 }

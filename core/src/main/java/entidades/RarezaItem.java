@@ -1,4 +1,4 @@
-package entidades.items;
+package entidades;
 
 public enum RarezaItem {
     COMUN(60),
