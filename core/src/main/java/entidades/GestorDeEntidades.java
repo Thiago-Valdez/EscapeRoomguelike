@@ -23,8 +23,6 @@ public class GestorDeEntidades {
     private final World world;
     private final Jugador jugador;
 
-    private Body cuerpoJugador;
-
     private final Map<Habitacion, List<PuertaVisual>> puertasPorSala = new HashMap<>();
 
     // Ítems tirados en el mundo
@@ -46,40 +44,43 @@ public class GestorDeEntidades {
      * px,py están en PIXELES y se usan tal cual.
      */
     public Body crearJugadorEnSalaInicial(Habitacion sala, float px, float py) {
-        if (cuerpoJugador == null) {
+
+        if (jugador.getCuerpoFisico() == null) {
+
             BodyDef bd = new BodyDef();
             bd.type = BodyDef.BodyType.DynamicBody;
             bd.position.set(px, py);
             bd.fixedRotation = true;
-            cuerpoJugador = world.createBody(bd);
+
+            Body body = world.createBody(bd);
 
             CircleShape shape = new CircleShape();
-            shape.setRadius(24f); // un poco más grande para verlo bien
+            shape.setRadius(24f);
 
             FixtureDef fd = new FixtureDef();
             fd.shape = shape;
             fd.density = 1f;
             fd.friction = 0f;
-            fd.restitution = 0f;
 
-            Fixture f = cuerpoJugador.createFixture(fd);
+            Fixture f = body.createFixture(fd);
             f.setUserData("jugador");
 
             shape.dispose();
 
+            jugador.setCuerpoFisico(body);
+
             System.out.println("[GestorEntidades] Jugador creado en (" + px + "," + py + ")");
         } else {
-            cuerpoJugador.setTransform(px, py, cuerpoJugador.getAngle());
-            cuerpoJugador.setLinearVelocity(0f, 0f);
+            Body body = jugador.getCuerpoFisico();
+            body.setTransform(px, py, body.getAngle());
+            body.setLinearVelocity(0f, 0f);
+
             System.out.println("[GestorEntidades] Jugador movido a (" + px + "," + py + ")");
         }
 
-        return cuerpoJugador;
+        return jugador.getCuerpoFisico();
     }
 
-    public Body getCuerpoJugador() {
-        return cuerpoJugador;
-    }
 
     // ================= ÍTEMS / ACTUALIZACIÓN ===================
 

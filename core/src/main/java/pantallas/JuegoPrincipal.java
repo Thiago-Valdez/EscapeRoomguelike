@@ -156,17 +156,14 @@ public class JuegoPrincipal implements Screen {
         jugador = new Jugador(
             "Jugador 1",
             Genero.MASCULINO,
-            Estilo.CLASICO,
-            world,
-            px,
-            py
+            Estilo.CLASICO
         );
 
-        Vector2 posJugador = jugador.getCuerpoFisico().getPosition();
-        camaraSala.centrarEn(posJugador.x, posJugador.y);
 
         // 8) Gestor de entidades (🔥 ANTES de crear puertas visuales)
         gestorEntidades = new GestorDeEntidades(world, jugador);
+
+        gestorEntidades.crearJugadorEnSalaInicial(salaActual, px, py);
 
         // 9) Generar paredes + sensores (y registrar puertas visuales)
         GeneradorParedesSalas genParedes = new GeneradorParedesSalas(fisica, disposicion);
@@ -210,6 +207,8 @@ public class JuegoPrincipal implements Screen {
 
         });
 
+        Vector2 posJugador = jugador.getCuerpoFisico().getPosition();
+        camaraSala.centrarEn(posJugador.x, posJugador.y);
 
         // 10) Control de jugador
         controlJugador = new ControlJugador(jugador);

@@ -24,10 +24,7 @@ public class Jugador {
 
     public Jugador(String nombre,
                    Genero generoInicial,
-                   Estilo estiloInicial,
-                   World world,
-                   float x,
-                   float y) {
+                   Estilo estiloInicial) {
 
         this.nombre = nombre;
         this.genero = (generoInicial != null) ? generoInicial : Genero.MASCULINO;
@@ -37,35 +34,6 @@ public class Jugador {
         this.vida = 3;
         this.velocidad = 100f;
 
-        // ---- Crear cuerpo físico ----
-        BodyDef bd = new BodyDef();
-        bd.type = BodyDef.BodyType.DynamicBody;
-        bd.position.set(x, y);
-
-        cuerpoFisico = world.createBody(bd);
-        cuerpoFisico.setUserData(this); // útil para colisiones
-
-        PolygonShape shape = new PolygonShape();
-        // Ajustá el tamaño al sprite real
-        shape.setAsBox(10f, 10f);
-
-        FixtureDef fd = new FixtureDef();
-        fd.shape = shape;
-        fd.density = 1f;
-        fd.friction = 0.3f;
-
-        Fixture fx = cuerpoFisico.createFixture(fd);
-        fx.setUserData("jugador");
-
-        // 🔍 LOG DE CREACIÓN
-        com.badlogic.gdx.Gdx.app.log(
-            "Jugador",
-            "Body creado en (" + x + ", " + y + ") " +
-                "worldHash=" + System.identityHashCode(world) +
-                " bodyHash=" + System.identityHashCode(cuerpoFisico)
-        );
-
-        shape.dispose();
     }
 
     // ------------------ Nombre ------------------
@@ -141,7 +109,9 @@ public class Jugador {
 
     public void setCuerpoFisico(Body cuerpoFisico) {
         this.cuerpoFisico = cuerpoFisico;
+        this.cuerpoFisico.setUserData(this); // CLAVE
     }
+
 
     // ------------------ Inventario ------------------
 
