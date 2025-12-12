@@ -9,23 +9,19 @@ import com.badlogic.gdx.utils.Disposable;
 
 import entidades.Jugador;
 import entidades.Item;
-import mapa.DisposicionMapa;
-import mapa.Habitacion;
-import mapa.TipoSala;
+import mapa.*;
 
 import java.util.Set;
 
-/**
- * HUD simple:
- *  - Corazones de vida arriba-izquierda
- *  - Minimapa 5x5 arriba-derecha (solo salas descubiertas)
- *  - Lista de items debajo del minimapa
- */
-public class HudJuego implements Disposable {
+public class HudJuego implements Disposable, ListenerCambioSala {
 
     private final DisposicionMapa disposicion;
-    private Habitacion salaActual;
     private final Jugador jugador;
+
+    private Habitacion salaActual;
+
+    // Layout calculado desde el piso (si tu LayoutMinimapa aún recibe grafo, lo ajustamos después)
+    private final LayoutMinimapa layout;
 
     private final OrthographicCamera cam;
     private final SpriteBatch batch;
@@ -35,17 +31,15 @@ public class HudJuego implements Disposable {
     private int screenWidth;
     private int screenHeight;
 
-    /**
-     * Ahora el HUD solo necesita la disposición (para el minimapa)
-     * y el jugador. Las salas descubiertas se obtienen de DisposicionMapa.
-     */
     public HudJuego(DisposicionMapa disposicion, Jugador jugador) {
         this.disposicion = disposicion;
         this.jugador = jugador;
 
-        // Por defecto usamos la sala de inicio; luego JuegoPrincipal
-        // llamará a actualizarSalaActual() con la correcta.
         this.salaActual = disposicion.salaInicio();
+
+        // Si tu LayoutMinimapa actual requiere (disposicion, grafo),
+        // dejalo como está por ahora, pero lo ideal es que use conexionesPiso.
+        this.layout = LayoutMinimapa.construir(disposicion);
 
         this.screenWidth = Gdx.graphics.getWidth();
         this.screenHeight = Gdx.graphics.getHeight();
@@ -55,12 +49,16 @@ public class HudJuego implements Disposable {
 
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
-        font = new BitmapFont(); // placeholder; luego podés cambiar a tu fuente
+        font = new BitmapFont();
     }
 
-    /** Llamado por JuegoPrincipal cuando cambia de habitación. */
     public void actualizarSalaActual(Habitacion nuevaSala) {
         this.salaActual = nuevaSala;
+    }
+
+    @Override
+    public void salaCambiada(Habitacion salaAnterior, Habitacion salaNueva) {
+        actualizarSalaActual(salaNueva);
     }
 
     public void resize(int width, int height) {
@@ -72,108 +70,127 @@ public class HudJuego implements Disposable {
     public void render() {
         cam.update();
 
-        // --------- Texto (vida + items) ----------
         batch.setProjectionMatrix(cam.combined);
         batch.begin();
-
         dibujarVida();
         dibujarItems();
-
         batch.end();
 
-        // --------- Minimapa (rectángulos) ----------
         shapes.setProjectionMatrix(cam.combined);
-        dibujarMinimapa();
+        dibujarMinimapaExplorado();
     }
 
-    // =================== VIDA ====================
-
     private void dibujarVida() {
-        // Muy simple: "HP: ♥♥♥"
         StringBuilder sb = new StringBuilder("Vida: ");
         int vidaActual = jugador.getVida();
         int vidaMax = jugador.getVidaMaxima();
-
-        for (int i = 0; i < vidaMax; i++) {
-            sb.append(i < vidaActual ? "♥" : "♡");
-        }
-
+        for (int i = 0; i < vidaMax; i++) sb.append(i < vidaActual ? "♥" : "♡");
         font.draw(batch, sb.toString(), 20, screenHeight - 20);
     }
 
-    // =================== ITEMS ====================
-
     private void dibujarItems() {
-        float x = screenWidth - 220f;
-        float y = screenHeight - 120f; // debajo del minimapa
-
+        float x = screenWidth - 260f;
+        float y = screenHeight - 180f;
         font.draw(batch, "Items:", x, y);
-
         y -= 18f;
+
         for (Item item : jugador.getObjetos()) {
             font.draw(batch, "- " + item.getNombre(), x, y);
             y -= 16f;
         }
     }
 
-    // =================== MINIMAPA ====================
-
-    private void dibujarMinimapa() {
-        // Medidas del minimapa (lo achicamos bastante)
-        float cellSize = 10f;    // cada casilla 10x10 px
-        float padding = 2f;
-        float mapWidth = 5 * cellSize + 4 * padding;
-        float mapHeight = 5 * cellSize + 4 * padding;
-
-        float baseX = screenWidth - mapWidth - 20f;        // margen derecha
-        float baseY = screenHeight - mapHeight - 40f;      // margen arriba
-
-        // Set de salas descubiertas, lo obtenemos de DisposicionMapa
+    private void dibujarMinimapaExplorado() {
         Set<Habitacion> descubiertas = disposicion.getDescubiertas();
 
+        final float roomW = 18f;
+        final float roomH = 14f;
+        final float gap = 8f;
+
+        int minX = layout.minX(), maxX = layout.maxX();
+        int minY = layout.minY(), maxY = layout.maxY();
+
+        int widthCells = (maxX - minX + 1);
+        int heightCells = (maxY - minY + 1);
+
+        float mapW = widthCells * roomW + (widthCells - 1) * gap;
+        float mapH = heightCells * roomH + (heightCells - 1) * gap;
+
+        float baseX = screenWidth - mapW - 20f;
+        float baseY = screenHeight - mapH - 40f;
+
+        // Fondo
         shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(0f, 0f, 0f, 0.55f);
+        shapes.rect(baseX - 6, baseY - 6, mapW + 12, mapH + 12);
+        shapes.end();
 
-        // Fondo del minimapa
-        shapes.setColor(0f, 0f, 0f, 0.5f);
-        shapes.rect(baseX - 4, baseY - 4, mapWidth + 8, mapHeight + 8);
+        // Pasillos: solo conexionesPiso y solo entre descubiertas
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(0.85f, 0.85f, 0.85f, 1f);
 
-        // Recorremos todas las habitaciones definidas en el enum
-        for (Habitacion h : Habitacion.values()) {
+        for (Habitacion h : disposicion.getSalasActivas()) {
+            if (!descubiertas.contains(h)) continue;
 
-            if (!descubiertas.contains(h)) {
-                // No mostrar salas que el jugador aún no visitó
-                continue;
+            for (var e : disposicion.getConexionesEnPiso(h).entrySet()) {
+                Habitacion dest = e.getValue();
+                if (dest == null) continue;
+                if (!descubiertas.contains(dest)) continue;
+
+                // Pasillo según layout
+                for (PosMini p : layout.pasilloEntre(h, dest)) {
+                    float x = baseX + (p.x() - minX) * (roomW + gap);
+                    float y = baseY + (p.y() - minY) * (roomH + gap);
+                    shapes.rect(x + roomW * 0.25f, y + roomH * 0.25f, roomW * 0.5f, roomH * 0.5f);
+                }
             }
+        }
+        shapes.end();
 
-            int gx = h.gridX;
-            int gy = h.gridY;
+        // Salas
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        for (Habitacion h : disposicion.getSalasActivas()) {
+            if (!descubiertas.contains(h)) continue;
 
-            float cx = baseX + gx * (cellSize + padding);
-            float cy = baseY + gy * (cellSize + padding);
+            PosMini p = layout.posiciones().get(h);
+            if (p == null) continue;
 
-            // Color según tipo
-            switch (h.tipo) {
-                case INICIO -> shapes.setColor(1f, 1f, 1f, 1f);           // blanco
-                case ACERTIJO -> shapes.setColor(0.3f, 0.6f, 1f, 1f);     // azul
-                case COMBATE -> shapes.setColor(1f, 0.2f, 0.2f, 1f);      // rojo
-                case BOTIN -> shapes.setColor(1f, 1f, 0.3f, 1f);          // amarillo
-                case JEFE -> shapes.setColor(0.8f, 0.3f, 1f, 1f);         // violeta
-            }
+            float x = baseX + (p.x() - minX) * (roomW + gap);
+            float y = baseY + (p.y() - minY) * (roomH + gap);
 
-            shapes.rect(cx, cy, cellSize, cellSize);
+            setColorSala(shapes, h);
+            shapes.rect(x, y, roomW, roomH);
+        }
+        shapes.end();
 
-            // Contorno especial si es la sala actual
-            if (h == salaActual) {
-                shapes.end();
+        // Borde sala actual
+        if (salaActual != null && descubiertas.contains(salaActual)) {
+            PosMini p = layout.posiciones().get(salaActual);
+            if (p != null) {
+                float x = baseX + (p.x() - minX) * (roomW + gap);
+                float y = baseY + (p.y() - minY) * (roomH + gap);
+
                 shapes.begin(ShapeRenderer.ShapeType.Line);
                 shapes.setColor(1f, 1f, 1f, 1f);
-                shapes.rect(cx - 1, cy - 1, cellSize + 2, cellSize + 2);
+                shapes.rect(x - 1, y - 1, roomW + 2, roomH + 2);
                 shapes.end();
-                shapes.begin(ShapeRenderer.ShapeType.Filled);
             }
         }
 
-        shapes.end();
+        batch.begin();
+        font.draw(batch, "Minimapa (explorado)", baseX, baseY - 12f);
+        batch.end();
+    }
+
+    private void setColorSala(ShapeRenderer sr, Habitacion h) {
+        switch (h.tipo) {
+            case INICIO -> sr.setColor(0.95f, 0.95f, 0.95f, 1f);
+            case ACERTIJO -> sr.setColor(0.35f, 0.65f, 1f, 1f);
+            case COMBATE -> sr.setColor(1f, 0.25f, 0.25f, 1f);
+            case BOTIN -> sr.setColor(1f, 1f, 0.35f, 1f);
+            case JEFE -> sr.setColor(0.85f, 0.35f, 1f, 1f);
+            default -> sr.setColor(0.6f, 0.6f, 0.6f, 1f);
+        }
     }
 
     @Override

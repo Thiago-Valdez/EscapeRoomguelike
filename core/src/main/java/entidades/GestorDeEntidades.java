@@ -1,10 +1,12 @@
 package entidades;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.*;
 
 import fisica.FisicaMundo;
 import mapa.Habitacion;
+import mapa.PuertaVisual;
 import mapa.TipoSala;
 
 import java.util.*;
@@ -22,6 +24,8 @@ public class GestorDeEntidades {
     private final Jugador jugador;
 
     private Body cuerpoJugador;
+
+    private final Map<Habitacion, List<PuertaVisual>> puertasPorSala = new HashMap<>();
 
     // Ítems tirados en el mundo
     private final List<Item> itemsMundo = new ArrayList<>();
@@ -88,6 +92,25 @@ public class GestorDeEntidades {
             intentarSpawnearItemEnBotin(salaActual);
         }
     }
+
+    public void registrarPuertaVisual(Habitacion sala, PuertaVisual pv) {
+        puertasPorSala
+            .computeIfAbsent(sala, k -> new ArrayList<>())
+            .add(pv);
+    }
+
+    public void renderPuertas(ShapeRenderer sr, Habitacion salaActual) {
+        if (sr == null || salaActual == null) return;
+
+        List<PuertaVisual> puertas = puertasPorSala.get(salaActual);
+        if (puertas == null) return;
+
+        for (PuertaVisual p : puertas) {
+            p.render(sr);
+        }
+    }
+
+
 
     private void intentarSpawnearItemEnBotin(Habitacion salaBotin) {
         if (botinesConItem.contains(salaBotin)) {

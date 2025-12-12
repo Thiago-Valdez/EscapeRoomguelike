@@ -1,23 +1,19 @@
 package mapa;
 
 import com.badlogic.gdx.Gdx;
-
 import java.util.*;
 
 /**
- * Genera un camino de habitaciones usando el GrafoPuertas y ciertas
- * restricciones por nivel.
+ * Genera un camino de habitaciones usando el GrafoPuertas y restricciones por nivel.
+ * IMPORTANTE: además construye conexionesPiso bidireccionales para gameplay/HUD/puertas físicas.
  */
 public class GeneradorMapa {
-
-    // --------- Config pública que usás desde JuegoPrincipal ---------
 
     public static class Configuracion {
         public int nivel = 1;
         public long semilla = System.currentTimeMillis();
     }
 
-    // Config interna por nivel
     private static class NivelCfg {
         final int minSalas;
         final int maxSalas;
@@ -43,20 +39,19 @@ public class GeneradorMapa {
     private final GrafoPuertas grafo;
     private final Random rng;
 
+    public List<Habitacion> salasDelPiso = new ArrayList<>();
+
     public GeneradorMapa(Configuracion cfg, GrafoPuertas grafo) {
         this.cfg = cfg;
         this.grafo = grafo;
         this.rng = new Random(cfg.semilla);
     }
 
-    // --------- API principal ---------
-
     public DisposicionMapa generar() {
         NivelCfg nivelCfg = elegirCfgNivel(cfg.nivel);
 
         Habitacion inicio = Habitacion.INICIO_1;
 
-        // Buscamos TODOS los caminos válidos que terminen en JEFE
         List<List<Habitacion>> candidatos = new ArrayList<>();
         List<Habitacion> path = new ArrayList<>();
         Set<Habitacion> visitados = new HashSet<>();
@@ -69,7 +64,6 @@ public class GeneradorMapa {
         List<Habitacion> mejor;
 
         if (candidatos.isEmpty()) {
-            // Fallback: camino mínimo Inicio -> Jefe aleatorio
             Habitacion jefeFallback = elegirJefeAleatorio();
             mejor = new ArrayList<>();
             mejor.add(inicio);
@@ -79,27 +73,66 @@ public class GeneradorMapa {
                 "No se pudo generar un camino completo, usando fallback simple.");
             imprimirCamino("CAMINO FALLBACK", mejor);
         } else {
-            // Elegimos entre los candidatos el/los más largos
             int maxLen = 0;
-            for (List<Habitacion> c : candidatos) {
-                maxLen = Math.max(maxLen, c.size());
-            }
+            for (List<Habitacion> c : candidatos) maxLen = Math.max(maxLen, c.size());
 
             List<List<Habitacion>> masLargos = new ArrayList<>();
-            for (List<Habitacion> c : candidatos) {
-                if (c.size() == maxLen) {
-                    masLargos.add(c);
-                }
-            }
+            for (List<Habitacion> c : candidatos) if (c.size() == maxLen) masLargos.add(c);
 
             mejor = masLargos.get(rng.nextInt(masLargos.size()));
             imprimirCamino("CAMINO GENERADO", mejor);
+
+            salasDelPiso.clear();
+            salasDelPiso.addAll(mejor);
         }
 
-        return new DisposicionMapa();
+        // Construimos la DisposicionMapa REAL
+        DisposicionMapa disposicion = new DisposicionMapa();
+        for (Habitacion h : mejor) disposicion.agregarAlCamino(h);
+
+        // 🔥 IMPORTANTE: construir conexionesPiso BIDIRECCIONALES según el camino elegido
+        construirConexionesDelPiso(disposicion, mejor);
+
+        // Debug opcional
+        disposicion.imprimirConexionesPiso();
+
+        return disposicion;
     }
 
-    // --------- DFS que encuentra TODOS los caminos válidos ---------
+    private void construirConexionesDelPiso(DisposicionMapa disposicion, List<Habitacion> mejor) {
+        if (mejor.size() < 2) return;
+
+        for (int i = 0; i < mejor.size() - 1; i++) {
+            Habitacion a = mejor.get(i);
+            Habitacion b = mejor.get(i + 1);
+
+            Direccion dir = direccionEntre(a, b);
+            if (dir == null) {
+                // Si pasa esto, tu grafo te dio vecinas() pero no podemos recuperar la dirección.
+                // Es 100% un bug de GrafoPuertas (vecinas sin mantener dirección).
+                Gdx.app.log("GeneradorMapa",
+                    "ADVERTENCIA: No se encontró dirección entre " + a.nombreVisible + " y " + b.nombreVisible);
+                continue;
+            }
+
+            // Guardar A->B y B->A siempre
+            disposicion.vincularEnPiso(a, dir, b);
+            disposicion.vincularEnPiso(b, dir.opuesta(), a);
+        }
+    }
+
+    /**
+     * Encuentra qué dirección en el grafo lleva de 'a' hacia 'b'.
+     * Esto permite mantener el grafo random sin cambiarlo.
+     */
+    private Direccion direccionEntre(Habitacion a, Habitacion b) {
+        // Intentamos con los destinos por dirección si tu grafo tiene getDestino().
+        for (Direccion d : Direccion.values()) {
+            Habitacion dest = grafo.destinoDe(a, d); // <- si tu método se llama distinto, ajustalo acá
+            if (dest == b) return d;
+        }
+        return null;
+    }
 
     private void dfsTodos(Habitacion actual,
                           NivelCfg nivelCfg,
@@ -110,16 +143,13 @@ public class GeneradorMapa {
         int n = path.size();
         if (n > nivelCfg.maxSalas) return;
 
-        // Si estamos en un Jefe, este camino sólo es válido si cumple restricciones
         if (actual.tipo == TipoSala.JEFE) {
             if (nivelCfg.terminaEnJefe && cumpleRestricciones(path, nivelCfg)) {
                 candidatos.add(new ArrayList<>(path));
             }
-            // No seguimos más allá del jefe
             return;
         }
 
-        // Armamos vecinos aleatorios para dar variedad
         List<Habitacion> vecinos = new ArrayList<>(grafo.vecinas(actual));
         Collections.shuffle(vecinos, rng);
 
@@ -131,7 +161,6 @@ public class GeneradorMapa {
 
             dfsTodos(sig, nivelCfg, path, visitados, candidatos);
 
-            // backtracking
             path.remove(path.size() - 1);
             visitados.remove(sig);
         }
@@ -139,13 +168,10 @@ public class GeneradorMapa {
 
     private boolean cumpleRestricciones(List<Habitacion> path, NivelCfg nivelCfg) {
         int n = path.size();
-
         if (n < nivelCfg.minSalas || n > nivelCfg.maxSalas) return false;
 
         Habitacion ultima = path.get(n - 1);
-        if (nivelCfg.terminaEnJefe && ultima.tipo != TipoSala.JEFE) {
-            return false;
-        }
+        if (nivelCfg.terminaEnJefe && ultima.tipo != TipoSala.JEFE) return false;
 
         int cAcertijo = 0;
         int cCombate = 0;
@@ -167,27 +193,21 @@ public class GeneradorMapa {
         return true;
     }
 
-    // --------- Helpers ---------
-
     private NivelCfg elegirCfgNivel(int nivel) {
         return switch (nivel) {
-            case 1 -> new NivelCfg(5, 7, 2, 2, true, true);
-            case 2 -> new NivelCfg(7, 9, 3, 3, true, true);
-            case 3 -> new NivelCfg(9, 11, 4, 4, true, true);
-            default -> new NivelCfg(5, 7, 2, 2, true, true);
+            case 1 -> new NivelCfg(5, 10, 2, 2, true, true);
+            case 2 -> new NivelCfg(7, 11, 3, 3, true, true);
+            case 3 -> new NivelCfg(9, 13, 4, 4, true, true);
+            default -> new NivelCfg(5, 10, 2, 2, true, true);
         };
     }
 
     private Habitacion elegirJefeAleatorio() {
         List<Habitacion> jefes = new ArrayList<>();
         for (Habitacion h : Habitacion.values()) {
-            if (h.tipo == TipoSala.JEFE) {
-                jefes.add(h);
-            }
+            if (h.tipo == TipoSala.JEFE) jefes.add(h);
         }
-        if (jefes.isEmpty()) {
-            throw new IllegalStateException("No hay habitaciones de JEFE definidas.");
-        }
+        if (jefes.isEmpty()) throw new IllegalStateException("No hay habitaciones de JEFE definidas.");
         return jefes.get(rng.nextInt(jefes.size()));
     }
 

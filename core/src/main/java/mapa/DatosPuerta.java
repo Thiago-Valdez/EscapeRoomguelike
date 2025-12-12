@@ -12,6 +12,7 @@ package mapa;
 public record DatosPuerta(
     Habitacion origen,
     Habitacion destino,
-    Direccion direccion
+    Direccion direccion,
+    PuertaVisual visual
 ) {
 }

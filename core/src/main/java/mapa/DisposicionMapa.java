@@ -10,12 +10,13 @@ public class DisposicionMapa {
     /** Habitaciones visitadas (útil para el minimapa, HUD) */
     private final Set<Habitacion> descubiertas = new HashSet<>();
 
+    /** Conexiones REALES del piso (solo puertas válidas) */
+    private final Map<Habitacion, EnumMap<Direccion, Habitacion>> conexionesPiso = new HashMap<>();
+
     /** Agrega una sala al camino (la run actual) */
     public void agregarAlCamino(Habitacion h) {
         if (h == null) return;
-        if (!camino.contains(h)) {
-            camino.add(h);
-        }
+        if (!camino.contains(h)) camino.add(h);
     }
 
     /** Devuelve el camino completo (salas activas de esta run) */
@@ -34,9 +35,7 @@ public class DisposicionMapa {
 
     /** Marca una sala como descubierta */
     public void descubrir(Habitacion h) {
-        if (h != null) {
-            descubiertas.add(h);
-        }
+        if (h != null) descubiertas.add(h);
     }
 
     /** Devuelve true si la sala ya se visitó */
@@ -51,48 +50,49 @@ public class DisposicionMapa {
 
     /** Sala de inicio: la primera del camino, si existe; si no, INICIO_1 */
     public Habitacion salaInicio() {
-        if (!camino.isEmpty()) {
-            return camino.get(0);
-        }
+        if (!camino.isEmpty()) return camino.get(0);
         return Habitacion.INICIO_1;
     }
 
-    /** Busca la primera sala de cierto tipo ENTRE TODAS LAS HABITACIONES DEFINIDAS */
-    public Habitacion buscarPrimeraDeTipo(TipoSala tipo) {
-        for (Habitacion h : Habitacion.values()) {
-            if (h.tipo == tipo) return h;
-        }
-        return null;
+    // =========================
+    // Conexiones del piso
+    // =========================
+
+    /** Vincula una puerta válida del piso */
+    public void vincularEnPiso(Habitacion origen, Direccion dir, Habitacion destino) {
+        if (origen == null || dir == null || destino == null) return;
+        conexionesPiso
+            .computeIfAbsent(origen, k -> new EnumMap<>(Direccion.class))
+            .put(dir, destino);
     }
 
-    /** Helper: obtiene la sala que está en gridX,gridY entre TODAS las habitaciones definidas */
-    public Habitacion salaEn(int gx, int gy) {
-        for (Habitacion h : Habitacion.values()) {
-            if (h.gridX == gx && h.gridY == gy) return h;
-        }
-        return null;
+    /** Destino por una dirección, SOLO si la puerta es válida en este piso */
+    public Habitacion getDestinoEnPiso(Habitacion origen, Direccion dir) {
+        EnumMap<Direccion, Habitacion> m = conexionesPiso.get(origen);
+        if (m == null) return null;
+        return m.get(dir);
     }
 
-    /**
-     * Vecina conectada SEGÚN EL ENUM Habitacion y el CAMINO:
-     * - origen tiene puerta en 'dir'
-     * - hay una habitación en (gridX+dx, gridY+dy)
-     * - esa habitación está en el camino
-     * - dicha habitación tiene puerta en dir.opuesta()
-     */
-    public Habitacion getVecinaConectada(Habitacion origen, Direccion dir) {
-        if (origen == null || dir == null) return null;
+    /** Conexiones válidas de la sala en este piso */
+    public EnumMap<Direccion, Habitacion> getConexionesEnPiso(Habitacion origen) {
+        EnumMap<Direccion, Habitacion> m = conexionesPiso.get(origen);
+        if (m == null) return new EnumMap<>(Direccion.class);
+        return m;
+    }
 
-        int nx = origen.gridX + dir.dx;
-        int ny = origen.gridY + dir.dy;
-
+    /** Útil para debug */
+    public void imprimirConexionesPiso() {
+        System.out.println("== CONEXIONES DEL PISO ==");
         for (Habitacion h : camino) {
-            if (h.gridX == nx && h.gridY == ny) {
-                if (origen.tienePuerta(dir) && h.tienePuerta(dir.opuesta())) {
-                    return h;
+            EnumMap<Direccion, Habitacion> m = conexionesPiso.get(h);
+            StringBuilder sb = new StringBuilder();
+            sb.append(" ").append(h.nombreVisible).append(" -> ");
+            if (m != null) {
+                for (var e : m.entrySet()) {
+                    sb.append("[").append(e.getKey()).append("→").append(e.getValue().nombreVisible).append("] ");
                 }
             }
+            System.out.println(sb);
         }
-        return null;
     }
 }

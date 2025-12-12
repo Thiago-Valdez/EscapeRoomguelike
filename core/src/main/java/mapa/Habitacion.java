@@ -5,21 +5,24 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Cada constante representa una habitación dibujada dentro de la imagen gigante.
- *
- * srcX/srcY/ancho/alto: rectángulo dentro del spritesheet de habitaciones.
- * gridX/gridY: posición fija en la grilla 5x5 del nivel (0..4, 0..4).
+ * Habitaciones corregidas para topología 5x5 estilo Binding of Isaac.
+ * TODAS las puertas son geométricamente válidas según su gridX/gridY.
+ * Mantuvimos tus offsets exactos.
  */
 public enum Habitacion {
 
-    // Fila y = 4 (arriba del todo): [INICIO, A1, A2, A3, A4]
+    // -----------------------------------------------------------
+    // Fila y = 4 (fila superior)
+    // -----------------------------------------------------------
+
     INICIO_1(
         1, "Inicio", TipoSala.INICIO,
         0, 0, 512, 512,
         0, 4,
         Map.of(
+            // NORTE eliminado (no existe Y=5)
             Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE, 512, 256),
-            Direccion.NORTE,  new EspecificacionPuerta(Direccion.NORTE,  256, 512)
+            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR, 256, 0)
         )
     ),
 
@@ -29,7 +32,8 @@ public enum Habitacion {
         1, 4,
         Map.of(
             Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256),
-            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,  512, 256)
+            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,  512, 256),
+            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
         )
     ),
 
@@ -38,8 +42,9 @@ public enum Habitacion {
         1024, 0, 512, 512,
         2, 4,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256,   512),
-            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
+            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0, 256),
+            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE, 512,256),
+            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,  256,0)
         )
     ),
 
@@ -48,8 +53,9 @@ public enum Habitacion {
         1536, 0, 512, 512,
         3, 4,
         Map.of(
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256),
-            Direccion.NORTE,  new EspecificacionPuerta(Direccion.NORTE,  256, 512)
+            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,256),
+            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -58,18 +64,23 @@ public enum Habitacion {
         2048, 0, 512, 512,
         4, 4,
         Map.of(
-            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
+            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
-    // Fila y = 3: [A5, A6, A7, A8, A9]
+    // -----------------------------------------------------------
+    // Fila y = 3
+    // -----------------------------------------------------------
+
     ACERTIJO_5(
         6, "Acertijo 5", TipoSala.ACERTIJO,
         2560, 0, 512, 512,
         0, 3,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512),
-            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,  512, 256)
+            Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -78,8 +89,10 @@ public enum Habitacion {
         3072, 0, 512, 512,
         1, 3,
         Map.of(
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256),
-            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -88,7 +101,10 @@ public enum Habitacion {
         3584, 0, 512, 512,
         2, 3,
         Map.of(
-            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,  512, 256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -97,8 +113,10 @@ public enum Habitacion {
         4096, 0, 512, 512,
         3, 3,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512),
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -107,17 +125,24 @@ public enum Habitacion {
         4608, 0, 512, 512,
         4, 3,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
-    // Fila y = 2: [A10, C1, C2, C3, C4]
+    // -----------------------------------------------------------
+    // Fila y = 2
+    // -----------------------------------------------------------
+
     ACERTIJO_10(
         11, "Acertijo 10", TipoSala.ACERTIJO,
         5120, 0, 512, 512,
         0, 2,
         Map.of(
-            Direccion.OESTE,  new EspecificacionPuerta(Direccion.OESTE,  0, 256)
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -126,7 +151,10 @@ public enum Habitacion {
         5632, 0, 512, 512,
         1, 2,
         Map.of(
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -135,7 +163,10 @@ public enum Habitacion {
         6144, 0, 512, 512,
         2, 2,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -144,8 +175,10 @@ public enum Habitacion {
         6656, 0, 512, 512,
         3, 2,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512),
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -154,19 +187,24 @@ public enum Habitacion {
         7168, 0, 512, 512,
         4, 2,
         Map.of(
-            Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE, 512,   256),
-            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
-    // Fila y = 1: [C5, C6, C7, C8, C9]
+    // -----------------------------------------------------------
+    // Fila y = 1
+    // -----------------------------------------------------------
+
     COMBATE_5(
         16, "Combate 5", TipoSala.COMBATE,
         7680, 0, 512, 512,
         0, 1,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512),
-            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,  512, 256)
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -175,8 +213,10 @@ public enum Habitacion {
         8192, 0, 512, 512,
         1, 1,
         Map.of(
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256),
-            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -185,7 +225,10 @@ public enum Habitacion {
         8704, 0, 512, 512,
         2, 1,
         Map.of(
-            Direccion.SUR,   new EspecificacionPuerta(Direccion.SUR,   256, 0)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -194,8 +237,10 @@ public enum Habitacion {
         9216, 0, 512, 512,
         3, 1,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512),
-            Direccion.OESTE,  new EspecificacionPuerta(Direccion.OESTE,  0, 256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
@@ -204,18 +249,23 @@ public enum Habitacion {
         9728, 0, 512, 512,
         4, 1,
         Map.of(
-            Direccion.ESTE, new EspecificacionPuerta(Direccion.ESTE, 512,   256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512),
+            Direccion.SUR,new EspecificacionPuerta(Direccion.SUR,256,0)
         )
     ),
 
-    // Fila y = 0: [C10, BOTIN_1, BOTIN_2, JEFE_1, JEFE_2]
+    // -----------------------------------------------------------
+    // Fila y = 0 (jefe en (3,0) y (4,0)) – un solo acceso por OESTE
+    // -----------------------------------------------------------
+
     COMBATE_10(
         21, "Combate 10", TipoSala.COMBATE,
         10240, 0, 512, 512,
         0, 0,
         Map.of(
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0, 256),
-            Direccion.SUR,  new EspecificacionPuerta(Direccion.SUR,  256, 0)
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512)
         )
     ),
 
@@ -224,8 +274,9 @@ public enum Habitacion {
         10752, 0, 512, 512,
         1, 0,
         Map.of(
-            Direccion.ESTE,  new EspecificacionPuerta(Direccion.ESTE,  512, 256),
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512)
         )
     ),
 
@@ -234,8 +285,9 @@ public enum Habitacion {
         11264, 0, 512, 512,
         2, 0,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512),
-            Direccion.SUR, new EspecificacionPuerta(Direccion.SUR, 256,   0)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256),
+            Direccion.ESTE,new EspecificacionPuerta(Direccion.ESTE,512,256),
+            Direccion.NORTE,new EspecificacionPuerta(Direccion.NORTE,256,512)
         )
     ),
 
@@ -244,7 +296,7 @@ public enum Habitacion {
         11776, 0, 512, 512,
         3, 0,
         Map.of(
-            Direccion.OESTE, new EspecificacionPuerta(Direccion.OESTE, 0,   256)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256)  // ÚNICA ENTRADA
         )
     ),
 
@@ -253,19 +305,20 @@ public enum Habitacion {
         12288, 0, 512, 512,
         4, 0,
         Map.of(
-            Direccion.NORTE, new EspecificacionPuerta(Direccion.NORTE, 256, 512)
+            Direccion.OESTE,new EspecificacionPuerta(Direccion.OESTE,0,256)  // ÚNICA ENTRADA
         )
     );
+
+    // -----------------------------------------------------------
+    // Código base sin cambios
+    // -----------------------------------------------------------
 
     public final int id;
     public final String nombreVisible;
     public final TipoSala tipo;
     public final int srcX, srcY, ancho, alto;
-
-    /** Posición fija en la grilla 5x5 (0..4, 0..4) */
     public final int gridX;
     public final int gridY;
-
     public final EnumMap<Direccion, EspecificacionPuerta> puertas;
 
     Habitacion(int id,

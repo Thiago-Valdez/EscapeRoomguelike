@@ -39,54 +39,74 @@ public class GrafoPuertas {
      * que tenga la puerta opuesta.
      */
     private void construirConexiones() {
-        for (Habitacion origen : habitaciones) {
 
-            EnumMap<Direccion, Habitacion> mapaDirs =
-                new EnumMap<>(Direccion.class);
+        for (Habitacion h : habitaciones)
+            conexiones.put(h, new EnumMap<>(Direccion.class));
 
-            for (Direccion dir : origen.puertas.keySet()) {
-                Direccion opuesta = dir.opuesta();
+        record Door(Habitacion h, Direccion d) {}
 
-                // Candidatos: TODAS las salas (distintas de origen)
-                // que tengan una puerta en la dirección opuesta.
-                List<Habitacion> candidatos = new ArrayList<>();
-                for (Habitacion candidata : habitaciones) {
-                    if (candidata == origen) continue;
-                    if (candidata.tienePuerta(opuesta)) {
-                        candidatos.add(candidata);
-                    }
-                }
+        List<Door> puertasLibres = new ArrayList<>();
 
-                if (candidatos.isEmpty()) {
-                    // No hay nadie compatible con esta puerta
-                    continue;
-                }
+        // solo las puertas declaradas en el enum
+        for (Habitacion h : habitaciones)
+            for (Direccion d : h.puertas.keySet())
+                puertasLibres.add(new Door(h, d));
 
-                Habitacion destino = candidatos.get(
-                    rng.nextInt(candidatos.size())
-                );
+        Collections.shuffle(puertasLibres, rng);
 
-                mapaDirs.put(dir, destino);
+        for (Door door : puertasLibres) {
+
+            Habitacion origen = door.h;
+            Direccion dir = door.d;
+            Direccion opuesta = dir.opuesta();
+
+            // ya emparejada
+            if (conexiones.get(origen).containsKey(dir))
+                continue;
+
+            // buscar candidatos que:
+            // - no sean el origen
+            // - tengan la puerta opuesta
+            // - no tengan esa puerta ya emparejada
+            // - NO estén ya conectados al origen (evita duplicados)
+            List<Habitacion> candidatos = new ArrayList<>();
+
+            for (Habitacion dest : habitaciones) {
+                if (dest == origen) continue;
+                if (!dest.puertas.containsKey(opuesta)) continue;
+                if (conexiones.get(dest).containsKey(opuesta)) continue;
+
+                // evitar que origen y destino tengan ya otra conexión
+                // NO queremos:
+                // Inicio.NORTE -> A
+                // Inicio.ESTE  -> A
+                if (conexiones.get(origen).containsValue(dest)) continue;
+
+                candidatos.add(dest);
             }
 
-            conexiones.put(origen, mapaDirs);
+            if (candidatos.isEmpty())
+                continue;
+
+            Habitacion destino = candidatos.get(rng.nextInt(candidatos.size()));
+
+            conexiones.get(origen).put(dir, destino);
+            conexiones.get(destino).put(opuesta, origen);
         }
 
-        // Debug opcional del grafo
+        // log
         System.out.println("== GRAFO DE PUERTAS ==");
         for (var e : conexiones.entrySet()) {
-            Habitacion h = e.getKey();
-            EnumMap<Direccion, Habitacion> dirs = e.getValue();
-
-            System.out.print(" " + h.nombreVisible + " ->");
-            for (var de : dirs.entrySet()) {
-                Direccion d = de.getKey();
-                Habitacion dst = de.getValue();
-                System.out.print(" [" + d + "→" + dst.nombreVisible + "]");
-            }
+            System.out.print(" " + e.getKey().nombreVisible + " ->");
+            for (var d : e.getValue().entrySet())
+                System.out.print(" [" + d.getKey() + "→" + d.getValue().nombreVisible + "]");
             System.out.println();
         }
     }
+
+
+
+
 
     /**
      * Devuelve la habitación destino a la que lleva la puerta `dir`

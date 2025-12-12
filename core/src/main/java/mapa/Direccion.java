@@ -17,8 +17,8 @@ public enum Direccion {
     public Direccion opuesta() {
         return switch (this) {
             case NORTE -> SUR;
-            case SUR   -> NORTE;
-            case ESTE  -> OESTE;
+            case SUR -> NORTE;
+            case ESTE -> OESTE;
             case OESTE -> ESTE;
         };
     }
