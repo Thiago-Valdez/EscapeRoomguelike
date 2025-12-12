@@ -167,27 +167,43 @@ public class JuegoPrincipal implements Screen {
 
         genParedes.generar((fixture, origen, destino, dir) -> {
 
-            // tamaño visual coherente con el sensor
-            float w = (dir == Direccion.ESTE || dir == Direccion.OESTE) ? 16f : 96f;
-            float h = (dir == Direccion.ESTE || dir == Direccion.OESTE) ? 96f : 16f;
+            Shape shape = fixture.getShape();
+            Body body = fixture.getBody();
 
-            Vector2 p = fixture.getBody().getPosition();
+            if (shape instanceof PolygonShape poly) {
 
-            // ⚠️ PuertaVisual espera x,y,w,h como rect (abajo-izq + tamaño)
-            // el body está en el centro, así que convertimos:
-            PuertaVisual visual = new PuertaVisual(
-                p.x - w / 2f,
-                p.y - h / 2f,
-                w,
-                h
-            );
+                // Vértices del poly en coordenadas LOCALES del body
+                Vector2 v = new Vector2();
+                float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY;
+                float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
 
-            DatosPuerta datos = new DatosPuerta(origen, destino, dir, visual);
-            fixture.setUserData(datos);
+                for (int i = 0; i < poly.getVertexCount(); i++) {
+                    poly.getVertex(i, v);
 
-            // Registrar puerta visual en el gestor
-            gestorEntidades.registrarPuertaVisual(origen, visual);
+                    // Pasar a coordenadas mundo
+                    Vector2 w = body.getWorldPoint(v);
+
+                    minX = Math.min(minX, w.x);
+                    minY = Math.min(minY, w.y);
+                    maxX = Math.max(maxX, w.x);
+                    maxY = Math.max(maxY, w.y);
+                }
+
+                PuertaVisual visual = new PuertaVisual(
+                    minX,
+                    minY,
+                    (maxX - minX),
+                    (maxY - minY)
+                );
+
+                DatosPuerta datos = new DatosPuerta(origen, destino, dir, visual);
+                fixture.setUserData(datos);
+
+                gestorEntidades.registrarPuertaVisual(origen, visual);
+            }
+
         });
+
 
         // 10) Control de jugador
         controlJugador = new ControlJugador(jugador, jugador.getCuerpoFisico());

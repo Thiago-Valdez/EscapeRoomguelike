@@ -1,12 +1,13 @@
 package mapa;
 
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class PuertaVisual {
-
-    private final float x, y;
-    private final float width, height;
+    public final float x;      // esquina inferior izquierda
+    public final float y;
+    public final float width;
+    public final float height;
 
     public PuertaVisual(float x, float y, float width, float height) {
         this.x = x;
@@ -17,11 +18,6 @@ public class PuertaVisual {
 
     public void render(ShapeRenderer sr) {
         sr.setColor(Color.BLACK);
-        sr.rect(
-            x - width / 2f,
-            y - height / 2f,
-            width,
-            height
-        );
+        sr.rect(x, y, width, height);
     }
 }
