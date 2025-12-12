@@ -27,7 +27,7 @@ public enum ItemTipo {
         @Override
         public Item crearInstancia() {
             return new Item("Bota Veloz", this, (jugador) -> {
-                jugador.setVelocidad(jugador.getVelocidad() + 40);
+                jugador.setVelocidad(jugador.getVelocidad() + 100);
             });
         }
     },
@@ -45,7 +45,7 @@ public enum ItemTipo {
         @Override
         public Item crearInstancia() {
             return new Item("Reloj Roto", this, (jugador) -> {
-                jugador.setVelocidad(jugador.getVelocidad() + 20);
+                jugador.setVelocidad(jugador.getVelocidad() + 150);
             });
         }
     },

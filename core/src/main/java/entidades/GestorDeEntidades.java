@@ -155,12 +155,17 @@ public class GestorDeEntidades {
 
         jugador.agregarObjeto(item);
 
+        // 🔥 recalculamos TODOS los stats
+        jugador.reaplicarEfectosDeItems();
+
         Body body = cuerposItems.remove(item);
         if (body != null) {
             world.destroyBody(body);
         }
         itemsMundo.remove(item);
     }
+
+
 
     public World getWorld() {
         return world;

@@ -66,6 +66,8 @@ public class JuegoPrincipal implements Screen {
     private ControlJugador controlJugador;
     private GestorDeEntidades gestorEntidades;
 
+
+
     // --- HUD ---
     private HudJuego hud;
     public List<Habitacion> salasDelPiso;
@@ -75,6 +77,10 @@ public class JuegoPrincipal implements Screen {
 
     // --- Cola de puertas tocadas (para evitar modificar Box2D dentro del callback) ---
     private final List<DatosPuerta> puertasPendientes = new ArrayList<>();
+
+    // arriba con las otras colas
+    private final List<entidades.Item> itemsPendientes = new ArrayList<>();
+
 
     // --- Flags ---
     private boolean debugFisica = true;
@@ -206,7 +212,7 @@ public class JuegoPrincipal implements Screen {
 
 
         // 10) Control de jugador
-        controlJugador = new ControlJugador(jugador, jugador.getCuerpoFisico());
+        controlJugador = new ControlJugador(jugador);
 
         // 11) Gestor de salas
         gestorSalas = new GestorSalas(disposicion, fisica, camaraSala, salaActual, jugador);
@@ -220,8 +226,16 @@ public class JuegoPrincipal implements Screen {
         fisica.setContactListener(new ContactListener() {
             @Override
             public void beginContact(Contact contact) {
+
+                Fixture a = contact.getFixtureA();
+                Fixture b = contact.getFixtureB();
+
                 manejarContacto(contact.getFixtureA());
                 manejarContacto(contact.getFixtureB());
+
+                // 🔥 nuevo: intentar detectar pickup
+                intentarEncolarPickup(a, b);
+                intentarEncolarPickup(b, a);
             }
 
             @Override public void endContact(Contact contact) {}
@@ -276,6 +290,29 @@ public class JuegoPrincipal implements Screen {
         puertasPendientes.clear();
     }
 
+    private void intentarEncolarPickup(Fixture jugadorFx, Fixture otroFx) {
+        if (jugadorFx == null || otroFx == null) return;
+
+        if (!esJugador(jugadorFx)) return;
+
+        Object ud = otroFx.getUserData();
+        if (ud instanceof entidades.Item item) {
+            itemsPendientes.add(item);
+        }
+    }
+
+    private boolean esJugador(Fixture fx) {
+        Object ud = fx.getUserData();
+        if ("jugador".equals(ud)) return true;
+
+        // fallback: si tu Jugador guarda el userData en el Body
+        Body b = fx.getBody();
+        if (b != null && b.getUserData() instanceof entidades.Jugador) return true;
+
+        return false;
+    }
+
+
     @Override
     public void render(float delta) {
         if (world == null) return;
@@ -288,6 +325,8 @@ public class JuegoPrincipal implements Screen {
 
         fisica.step();
         procesarPuertasPendientes();
+        procesarItemsPendientes();
+
 
         if (framesBloqueoPuertas > 0) framesBloqueoPuertas--;
 
@@ -325,6 +364,17 @@ public class JuegoPrincipal implements Screen {
             hud.render();
         }
     }
+
+    private void procesarItemsPendientes() {
+        if (itemsPendientes.isEmpty()) return;
+
+        // procesá 1 por frame o todos; yo haría todos
+        for (entidades.Item it : itemsPendientes) {
+            gestorEntidades.recogerItem(it);
+        }
+        itemsPendientes.clear();
+    }
+
 
     @Override
     public void resize(int width, int height) {

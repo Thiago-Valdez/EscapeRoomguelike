@@ -89,7 +89,7 @@ public class HudJuego implements Disposable, ListenerCambioSala {
     }
 
     private void dibujarItems() {
-        float x = screenWidth - 260f;
+        float x = screenWidth - 120f;
         float y = screenHeight - 180f;
         font.draw(batch, "Items:", x, y);
         y -= 18f;

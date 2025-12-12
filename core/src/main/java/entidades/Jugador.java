@@ -47,7 +47,7 @@ public class Jugador {
 
         PolygonShape shape = new PolygonShape();
         // Ajustá el tamaño al sprite real
-        shape.setAsBox(16f, 24f);
+        shape.setAsBox(10f, 10f);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
@@ -159,12 +159,16 @@ public class Jugador {
     }
 
     public void reaplicarEfectosDeItems() {
+        // stats base del jugador
         this.vidaMaxima = 3;
-        if (vida > vidaMaxima) vida = vidaMaxima;
-        this.velocidad = 40f;
+        this.velocidad = 100f;
 
+        if (vida > vidaMaxima) vida = vidaMaxima;
+
+        // aplicar todos los ítems pasivos
         for (Item item : objetos) {
             item.aplicarModificacion(this);
         }
     }
+
 }
