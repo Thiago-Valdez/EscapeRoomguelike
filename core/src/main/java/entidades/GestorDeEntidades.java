@@ -55,7 +55,7 @@ public class GestorDeEntidades {
             Body body = world.createBody(bd);
 
             CircleShape shape = new CircleShape();
-            shape.setRadius(24f);
+            shape.setRadius(12f);
 
             FixtureDef fd = new FixtureDef();
             fd.shape = shape;

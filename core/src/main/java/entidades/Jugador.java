@@ -19,6 +19,8 @@ public class Jugador {
     // Cuerpo físico en Box2D
     private Body cuerpoFisico;
 
+    private boolean botonPresionado = false; // Nuevo atributo para detectar si el botón está presionado
+
     // Inventario simple (ítems pasivos)
     private final List<Item> objetos = new ArrayList<>();
 
@@ -32,7 +34,7 @@ public class Jugador {
 
         this.vidaMaxima = 3;
         this.vida = 3;
-        this.velocidad = 100f;
+        this.velocidad = 200f;
 
     }
 
@@ -112,6 +114,16 @@ public class Jugador {
         this.cuerpoFisico.setUserData(this); // CLAVE
     }
 
+    // Este método actualizará el estado del botón
+    public void activarBoton(boolean estado) {
+        this.botonPresionado = estado;
+    }
+
+    // Método que verifica si el botón está presionado
+    public boolean estaBotonPresionado() {
+        return botonPresionado;
+    }
+
 
     // ------------------ Inventario ------------------
 
@@ -131,7 +143,7 @@ public class Jugador {
     public void reaplicarEfectosDeItems() {
         // stats base del jugador
         this.vidaMaxima = 3;
-        this.velocidad = 100f;
+        this.velocidad = 200f;
 
         if (vida > vidaMaxima) vida = vidaMaxima;
 

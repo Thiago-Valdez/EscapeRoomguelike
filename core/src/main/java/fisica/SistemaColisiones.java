@@ -13,7 +13,7 @@ import java.util.List;
  * - Con el sistema nuevo, las puertas/sensores del piso se generan en GeneradorParedesSalas
  *   según DisposicionMapa + conexiones del piso.
  * - Por eso, este sistema ya NO debe crear sensores de puerta, o te duplica / rompe coherencia.
- */
+
 public class SistemaColisiones {
 
     private final FabricaCuerpos fabrica;
@@ -28,7 +28,7 @@ public class SistemaColisiones {
      *
      * Si aún querés puertas, deben generarse con GeneradorParedesSalas,
      * no acá.
-     */
+
     public List<Body> construirParaSala(Habitacion h) {
         List<Body> bodies = new ArrayList<>();
 
@@ -48,4 +48,5 @@ public class SistemaColisiones {
 
         return bodies;
     }
-}
+
+}*/

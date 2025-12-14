@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="80" height="80" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="157">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="80" height="80" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="218">
  <tileset firstgid="1" source="../Tilesets/FondoBlanco.tsx"/>
  <tileset firstgid="65" source="../Tilesets/FondoAzul.tsx"/>
  <tileset firstgid="129" source="../Tilesets/FondoRojo.tsx"/>
@@ -143,15 +143,15 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,156,0,156,0,153,155,0,156,0,156,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,129,154,154,155,0,0,153,154,154,131,0,0,0,0,0,0,0,0,0,0,0,3758096532,3758096524,3758096524,3758096524,3758096515,0,0,0,0,0,0,153,154,154,155,0,0,153,154,154,155,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,140,0,0,0,0,0,0,0,0,140,0,0,0,0,0,0,3758096532,3758096524,3758096515,0,0,0,0,0,0,3758096538,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,153,155,0,0,0,0,0,0,0,0,0,0,140,0,0,0,0,0,0,0,0,140,0,0,0,0,0,0,3758096532,3758096524,3758096515,0,0,0,0,0,0,3758096538,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,156,0,156,0,153,155,0,156,0,156,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,140,0,132,0,129,131,0,132,0,140,0,0,0,0,0,0,0,0,3758096538,0,3758096532,3758096524,3758096524,3758096516,0,3758096538,0,0,0,0,0,0,153,154,154,155,0,0,153,154,154,155,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,153,154,154,154,154,154,154,155,0,0,0,0,0,140,0,140,0,137,139,0,140,0,140,0,0,0,0,0,0,0,0,3758096537,0,0,0,0,0,0,3758096537,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,153,154,154,155,0,0,0,0,0,0,0,0,0,140,0,140,0,137,139,0,140,0,140,0,0,0,0,0,0,0,0,3758096537,0,0,0,0,0,0,3758096537,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,132,0,132,0,129,131,0,132,0,132,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,148,0,140,0,137,139,0,140,0,148,0,0,0,0,0,0,0,0,0,0,3758096531,3758096523,3758096523,3758096515,0,0,0,0,0,0,0,0,0,0,0,0,129,131,0,0,0,0,0,0,0,
-0,0,0,148,0,148,0,145,147,0,148,0,148,0,0,0,0,0,0,0,0,153,154,154,154,154,154,154,154,155,0,0,0,0,0,0,0,148,0,145,147,0,148,0,0,0,0,0,0,0,0,0,0,0,0,3758096529,3758096521,3758096521,3758096513,0,0,0,0,0,0,0,0,0,0,0,0,145,147,0,0,0,0,0,0,0,
+0,0,0,148,0,148,0,145,147,0,148,0,148,0,0,0,0,0,0,0,0,153,154,154,154,154,155,0,0,0,0,0,0,0,0,0,0,148,0,145,147,0,148,0,0,0,0,0,0,0,0,0,0,0,0,3758096529,3758096521,3758096521,3758096513,0,0,0,0,0,0,0,0,0,0,0,0,145,147,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3758096539,0,0,0,0,0,0,3758096539,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,156,0,156,0,153,155,0,156,0,156,0,0,0,0,0,0,0,153,154,154,154,154,154,154,154,154,155,0,0,0,0,0,0,129,154,155,0,0,153,154,131,0,0,0,0,0,0,0,0,0,3758096538,0,3758096532,3758096524,3758096524,3758096516,0,3758096538,0,0,0,0,0,0,153,154,154,155,0,0,153,154,154,155,0,0,0,
+0,0,0,156,0,156,0,153,155,0,156,0,156,0,0,0,0,0,0,0,153,154,154,154,154,154,154,155,0,0,0,0,0,0,0,0,129,154,155,0,0,153,154,131,0,0,0,0,0,0,0,0,0,3758096538,0,3758096532,3758096524,3758096524,3758096516,0,3758096538,0,0,0,0,0,0,153,154,154,155,0,0,153,154,154,155,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,140,0,0,0,0,0,0,140,0,0,0,0,0,0,0,3758096532,3758096524,3758096513,0,0,0,0,0,0,3758096538,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,156,0,156,0,153,155,0,156,0,156,0,0,0,0,0,0,153,154,154,154,154,154,154,154,154,154,155,0,0,0,0,0,0,148,0,0,0,0,0,0,148,0,0,0,0,0,0,0,0,0,0,0,0,3758096532,3758096524,3758096524,3758096524,3758096513,0,0,0,0,0,0,153,154,154,155,0,0,153,154,154,155,0,0,0,
+0,0,0,156,0,156,0,153,155,0,156,0,156,0,0,0,0,0,0,153,154,154,154,154,154,154,154,154,155,0,0,0,0,0,0,0,148,0,0,0,0,0,0,148,0,0,0,0,0,0,0,0,0,0,0,0,3758096532,3758096524,3758096524,3758096524,3758096513,0,0,0,0,0,0,153,154,154,155,0,0,153,154,154,155,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -449,10 +449,10 @@
   <object id="114" x="321.333" y="1761.33" width="30.6667" height="62"/>
   <object id="115" x="385" y="1761.33" width="30.6667" height="62"/>
   <object id="116" x="225.333" y="1761.33" width="61.3333" height="61.3333"/>
-  <object id="117" x="608.667" y="1918.67" width="352" height="30.6667"/>
-  <object id="118" x="642" y="1854.67" width="318" height="31.3333"/>
-  <object id="119" x="672.667" y="1793.33" width="286.667" height="28.6667"/>
-  <object id="120" x="706" y="1728" width="254" height="33.3333"/>
+  <object id="117" x="608.667" y="1918.67" width="321" height="30.6667"/>
+  <object id="118" x="642" y="1854.67" width="256" height="31.3333"/>
+  <object id="119" x="672.667" y="1793.33" width="191.667" height="28.6667"/>
+  <object id="120" x="706" y="1728" width="126" height="33.3333"/>
   <object id="121" x="1346" y="1698" width="30.6667" height="126"/>
   <object id="122" x="1185.33" y="1696.67" width="30.6667" height="127.333"/>
   <object id="123" x="1250.67" y="1699.33" width="60.6667" height="124.667"/>
@@ -506,6 +506,261 @@
   </object>
   <object id="156" x="1376" y="2271.5">
    <polygon points="0,0 -1.5,-63 -192,-63 -191,0.5 -161,-0.5 -160.5,-32 -34.5,-31.5 -31.5,-3"/>
+  </object>
+  <object id="157" x="739" y="1667" width="60" height="27"/>
+  <object id="206" x="2" y="-2" width="2558" height="22"/>
+  <object id="207" x="2544" y="-4" width="16" height="2564"/>
+  <object id="208" x="-2" y="-2" width="22" height="2562"/>
+  <object id="209" x="-6" y="2544" width="2570" height="12"/>
+  <object id="210" x="0" y="500" width="2560" height="24"/>
+  <object id="211" x="2" y="1008" width="2556" height="30"/>
+  <object id="212" x="2" y="1522" width="2554" height="36"/>
+  <object id="213" x="2" y="2034" width="2562" height="34"/>
+  <object id="214" x="496" y="0" width="32" height="2562"/>
+  <object id="215" x="1004" y="0" width="38" height="2556"/>
+  <object id="216" x="1524" y="0" width="26" height="2558"/>
+  <object id="217" x="2034" y="2" width="28" height="2562"/>
+ </objectgroup>
+ <objectgroup id="5" name="botones">
+  <object id="159" x="691" y="242" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_1"/>
+   </properties>
+  </object>
+  <object id="162" x="819.5" y="242.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_1"/>
+   </properties>
+  </object>
+  <object id="167" x="1267.5" y="178.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_2"/>
+   </properties>
+  </object>
+  <object id="168" x="1266.5" y="305.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_2"/>
+   </properties>
+  </object>
+  <object id="169" x="1811.5" y="276.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_3"/>
+   </properties>
+  </object>
+  <object id="170" x="1939.5" y="403.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_3"/>
+   </properties>
+  </object>
+  <object id="171" x="2228.5" y="241.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_4"/>
+   </properties>
+  </object>
+  <object id="172" x="2356.5" y="244.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_4"/>
+   </properties>
+  </object>
+  <object id="173" x="146.5" y="658.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_5"/>
+   </properties>
+  </object>
+  <object id="174" x="339.5" y="818.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_5"/>
+   </properties>
+  </object>
+  <object id="175" x="690.5" y="691.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_6"/>
+   </properties>
+  </object>
+  <object id="176" x="819.5" y="692.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_6"/>
+   </properties>
+  </object>
+  <object id="177" x="1269.5" y="755.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_7"/>
+   </properties>
+  </object>
+  <object id="178" x="1087.5" y="930.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_7"/>
+   </properties>
+  </object>
+  <object id="179" x="1779.5" y="576.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_8"/>
+   </properties>
+  </object>
+  <object id="180" x="1781.5" y="755.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_8"/>
+   </properties>
+  </object>
+  <object id="181" x="2245.5" y="751.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_9"/>
+   </properties>
+  </object>
+  <object id="182" x="2338.5" y="751.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_9"/>
+   </properties>
+  </object>
+  <object id="183" x="243.5" y="1204.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="ACERTIJO_10"/>
+   </properties>
+  </object>
+  <object id="184" x="242.5" y="1345.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="ACERTIJO_10"/>
+   </properties>
+  </object>
+  <object id="185" x="594.5" y="1424.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_1"/>
+   </properties>
+  </object>
+  <object id="186" x="913.5" y="1424.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_1"/>
+   </properties>
+  </object>
+  <object id="187" x="1170.5" y="1362.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_2"/>
+   </properties>
+  </object>
+  <object id="188" x="1363.5" y="1364.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_2"/>
+   </properties>
+  </object>
+  <object id="189" x="1683.5" y="1168.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_3"/>
+   </properties>
+  </object>
+  <object id="190" x="1875.5" y="1362.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_3"/>
+   </properties>
+  </object>
+  <object id="191" x="2191.5" y="1359.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_4"/>
+   </properties>
+  </object>
+  <object id="192" x="2387.5" y="1171.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_4"/>
+   </properties>
+  </object>
+  <object id="193" x="63.5" y="1776.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_5"/>
+   </properties>
+  </object>
+  <object id="194" x="241.5" y="1891.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_5"/>
+   </properties>
+  </object>
+  <object id="195" x="752.5" y="1619.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_6"/>
+   </properties>
+  </object>
+  <object id="196" x="920.5" y="1884.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_6"/>
+   </properties>
+  </object>
+  <object id="197" x="1154.5" y="1666.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_7"/>
+   </properties>
+  </object>
+  <object id="198" x="1378.5" y="1666.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_7"/>
+   </properties>
+  </object>
+  <object id="199" x="1649.5" y="1714.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_8"/>
+   </properties>
+  </object>
+  <object id="200" x="1650.5" y="1840.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_8"/>
+   </properties>
+  </object>
+  <object id="201" x="2195.5" y="1664.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_9"/>
+   </properties>
+  </object>
+  <object id="202" x="2388.5" y="1890.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_9"/>
+   </properties>
+  </object>
+  <object id="203" x="160.5" y="2387.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="2"/>
+    <property name="sala" value="COMBATE_10"/>
+   </properties>
+  </object>
+  <object id="204" x="340.5" y="2388.5" width="25" height="27">
+   <properties>
+    <property name="jugador" value="1"/>
+    <property name="sala" value="COMBATE_10"/>
+   </properties>
   </object>
  </objectgroup>
 </map>

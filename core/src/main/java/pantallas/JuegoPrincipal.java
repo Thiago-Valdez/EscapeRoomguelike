@@ -4,11 +4,13 @@ import camara.CamaraDeSala;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import control.GestorSalas;
+import control.ControlPuzzlePorSala;
 import entidades.ControlJugador;
 import entidades.Genero;
 import entidades.Jugador;
 import entidades.GestorDeEntidades;
 import entidades.Estilo;
+import fisica.BotonesDesdeTiled;
 import mapa.PuertaVisual;
 import fisica.ColisionesDesdeTiled;
 import fisica.FisicaMundo;
@@ -57,15 +59,19 @@ public class JuegoPrincipal implements Screen {
     // --- Mapa lógico / camino ---
     private DisposicionMapa disposicion;
     private Habitacion salaActual;
+    private ControlPuzzlePorSala controlPuzzle;
 
     // --- Gestión de salas (cambio de habitación + cámara) ---
     private GestorSalas gestorSalas;
 
     // --- Jugador + control ---
-    private Jugador jugador;
+    private Jugador jugador1;
+    private Jugador jugador2;
     private ControlJugador controlJugador;
     private GestorDeEntidades gestorEntidades;
 
+
+    private PuzzleSala puzzleSala;
 
 
     // --- HUD ---
@@ -81,12 +87,17 @@ public class JuegoPrincipal implements Screen {
     // arriba con las otras colas
     private final List<entidades.Item> itemsPendientes = new ArrayList<>();
 
+    private final List<EventoBoton> eventosBoton = new ArrayList<>();
+
 
     // --- Flags ---
     private boolean debugFisica = true;
 
     // Cooldown para evitar ping-pong de puertas
     private int framesBloqueoPuertas = 0;
+
+    // Modo temporal para testear con 1 solo jugador
+    private static final boolean MODO_UN_JUGADOR = true;
 
     public JuegoPrincipal(Principal game) {
         this.game = game;
@@ -131,6 +142,10 @@ public class JuegoPrincipal implements Screen {
         salaActual = disposicion.salaInicio();
         disposicion.descubrir(salaActual);
 
+        controlPuzzle = new ControlPuzzlePorSala();
+        controlPuzzle.alEntrarASala(salaActual);
+
+
         // 3) Cámara
         camaraSala = new CamaraDeSala(512f, 512f);
         camaraSala.setFactorLerp(0f);
@@ -145,6 +160,7 @@ public class JuegoPrincipal implements Screen {
         mapaTiled = new TmxMapLoader().load("TMX/mapa.tmx");
         mapaRenderer = new OrthogonalTiledMapRenderer(mapaTiled, 1f);
         ColisionesDesdeTiled.crearColisiones(mapaTiled, world);
+        BotonesDesdeTiled.crearBotones(mapaTiled, world);
 
         // 6) Calcular spawn jugador (centro sala inicial)
         float baseX = salaActual.gridX * salaActual.ancho;
@@ -153,15 +169,14 @@ public class JuegoPrincipal implements Screen {
         float py = baseY + salaActual.alto / 2f;
 
         // 7) Crear jugador
-        jugador = new Jugador(
-            "Jugador 1",
-            Genero.MASCULINO,
-            Estilo.CLASICO
-        );
+        jugador1 = new Jugador("Jugador 1", Genero.MASCULINO, Estilo.CLASICO);
+        jugador2 = new Jugador("Jugador 2", Genero.FEMENINO, Estilo.CLASICO);
+
+        puzzleSala = new PuzzleSala();
 
 
         // 8) Gestor de entidades (🔥 ANTES de crear puertas visuales)
-        gestorEntidades = new GestorDeEntidades(world, jugador);
+        gestorEntidades = new GestorDeEntidades(world, jugador1);
 
         gestorEntidades.crearJugadorEnSalaInicial(salaActual, px, py);
 
@@ -207,17 +222,17 @@ public class JuegoPrincipal implements Screen {
 
         });
 
-        Vector2 posJugador = jugador.getCuerpoFisico().getPosition();
+        Vector2 posJugador = jugador1.getCuerpoFisico().getPosition();
         camaraSala.centrarEn(posJugador.x, posJugador.y);
 
         // 10) Control de jugador
-        controlJugador = new ControlJugador(jugador);
+        controlJugador = new ControlJugador(jugador1);
 
         // 11) Gestor de salas
-        gestorSalas = new GestorSalas(disposicion, fisica, camaraSala, salaActual, jugador);
+        gestorSalas = new GestorSalas(disposicion, fisica, camaraSala, salaActual, jugador1);
 
         // 12) HUD
-        hud = new HudJuego(disposicion, jugador);
+        hud = new HudJuego(disposicion, jugador1);
         hud.actualizarSalaActual(salaActual);
         agregarListenerCambioSala(hud);
 
@@ -235,9 +250,20 @@ public class JuegoPrincipal implements Screen {
                 // 🔥 nuevo: intentar detectar pickup
                 intentarEncolarPickup(a, b);
                 intentarEncolarPickup(b, a);
+
+                intentarEncolarBoton(a, b, true);  // DOWN
+                intentarEncolarBoton(b, a, true);  // DOWN
+
             }
 
-            @Override public void endContact(Contact contact) {}
+            @Override
+            public void endContact(Contact contact) {
+                Fixture a = contact.getFixtureA();
+                Fixture b = contact.getFixtureB();
+
+                intentarEncolarBoton(a, b, false); // UP
+                intentarEncolarBoton(b, a, false); // UP
+            }
             @Override public void preSolve(Contact contact, Manifold oldManifold) {}
             @Override public void postSolve(Contact contact, ContactImpulse impulse) {}
         });
@@ -257,6 +283,11 @@ public class JuegoPrincipal implements Screen {
     }
 
     private void procesarPuertasPendientes() {
+        if (controlPuzzle != null && controlPuzzle.estaBloqueada(salaActual)) {
+            puertasPendientes.clear();
+            return;
+        }
+
         if (puertasPendientes.isEmpty()) return;
 
         if (framesBloqueoPuertas > 0) {
@@ -264,18 +295,9 @@ public class JuegoPrincipal implements Screen {
             return;
         }
 
-        Body cuerpoJugador = jugador.getCuerpoFisico();
-        if (cuerpoJugador == null) {
-            puertasPendientes.clear();
-            return;
-        }
-
         DatosPuerta puerta = puertasPendientes.get(0);
 
-        System.out.println("[JuegoPrincipal] Cambio de sala: "
-            + puerta.origen().nombreVisible + " por " + puerta.direccion());
-
-        gestorSalas.irASalaVecinaPorPuerta(puerta, cuerpoJugador);
+        gestorSalas.irASalaVecinaPorPuerta(puerta);
 
         Habitacion nueva = gestorSalas.getSalaActual();
         if (nueva != null) {
@@ -283,11 +305,14 @@ public class JuegoPrincipal implements Screen {
             salaActual = nueva;
             disposicion.descubrir(salaActual);
             notificarCambioSala(anterior, salaActual);
+
+            if (controlPuzzle != null) controlPuzzle.alEntrarASala(salaActual);
         }
 
         framesBloqueoPuertas = 15;
         puertasPendientes.clear();
     }
+
 
     private void intentarEncolarPickup(Fixture jugadorFx, Fixture otroFx) {
         if (jugadorFx == null || otroFx == null) return;
@@ -300,6 +325,21 @@ public class JuegoPrincipal implements Screen {
         }
     }
 
+    private void intentarEncolarBoton(Fixture jugadorFx, Fixture otroFx, boolean down) {
+        if (jugadorFx == null || otroFx == null) return;
+
+        int jugadorId = getJugadorId(jugadorFx);
+        if (jugadorId == -1) return;
+
+        Object ud = otroFx.getUserData();
+        if (ud instanceof mapa.DatosBoton db) {
+            eventosBoton.add(new EventoBoton(db, jugadorId, down));
+        }
+    }
+
+
+
+
     private boolean esJugador(Fixture fx) {
         Object ud = fx.getUserData();
         if ("jugador".equals(ud)) return true;
@@ -310,6 +350,14 @@ public class JuegoPrincipal implements Screen {
 
         return false;
     }
+
+    private int getJugadorId(Fixture fx) {
+        Object ud = fx.getUserData();
+        if ("jugador".equals(ud)) return 1; // por ahora
+        if (fx.getBody() != null && fx.getBody().getUserData() instanceof entidades.Jugador) return 1;
+        return -1;
+    }
+
 
 
     @Override
@@ -322,9 +370,11 @@ public class JuegoPrincipal implements Screen {
             controlJugador.actualizar(delta);
         }
 
-        fisica.step();
+        fisica.step(delta);
         procesarPuertasPendientes();
         procesarItemsPendientes();
+        procesarBotonesPendientes();
+
 
 
         if (framesBloqueoPuertas > 0) framesBloqueoPuertas--;
@@ -373,6 +423,47 @@ public class JuegoPrincipal implements Screen {
         }
         itemsPendientes.clear();
     }
+
+    private void procesarBotonesPendientes() {
+        if (eventosBoton.isEmpty()) return;
+
+        for (EventoBoton ev : eventosBoton) {
+            mapa.DatosBoton boton = ev.boton();
+            int jugadorId = ev.jugadorId();
+
+            // Solo botones de la sala actual
+            if (boton.sala() != salaActual) continue;
+
+            // Validación: quién puede presionar qué botón
+            boolean valido = (jugadorId == boton.jugadorId());
+
+            // TEMP: modo 1 jugador -> dejamos "latched" (no mantenido) para testear
+            if (MODO_UN_JUGADOR && jugadorId == 1) {
+                // En modo 1 jugador, ignoramos UP y tratamos DOWN como “presionado permanente”
+                if (!ev.down()) continue;
+
+                boolean desbloqueo = controlPuzzle.botonDown(salaActual, boton.jugadorId());
+                if (desbloqueo) Gdx.app.log("PUZZLE", "Sala desbloqueada: " + salaActual.nombreVisible);
+                continue;
+            }
+
+            if (!valido) continue;
+
+            if (ev.down()) {
+                boolean desbloqueo = controlPuzzle.botonDown(salaActual, boton.jugadorId());
+                if (desbloqueo) {
+                    Gdx.app.log("PUZZLE", "Sala desbloqueada: " + salaActual.nombreVisible);
+                }
+            } else {
+                controlPuzzle.botonUp(salaActual, boton.jugadorId());
+            }
+        }
+
+        eventosBoton.clear();
+    }
+
+
+
 
 
     @Override

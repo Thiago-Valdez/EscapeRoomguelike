@@ -13,6 +13,12 @@ public class FisicaMundo {
 
     // Podés dejarlo por compatibilidad, pero no lo usamos más para escalar.
     public static final float PPM = 1f;
+    private float accumulator = 0f;
+    private static final float FIXED_TIMESTEP = 1f / 60f;
+    private static final int VELOCITY_ITERS = 6;
+    private static final int POSITION_ITERS = 2;
+    private static final float MAX_FRAME_TIME = 0.25f; // anti “spiral of death”
+
 
     private final World world;
     private final Box2DDebugRenderer debugRenderer;
@@ -33,9 +39,17 @@ public class FisicaMundo {
         world.setContactListener(listener);
     }
 
-    public void step() {
-        world.step(1f / 60f, 6, 2);
+    public void step(float delta) {
+        // cap para evitar que si el juego se cuelga (alt-tab, breakpoint) explote la física
+        float frameTime = Math.min(delta, MAX_FRAME_TIME);
+        accumulator += frameTime;
+
+        while (accumulator >= FIXED_TIMESTEP) {
+            world.step(FIXED_TIMESTEP, VELOCITY_ITERS, POSITION_ITERS);
+            accumulator -= FIXED_TIMESTEP;
+        }
     }
+
 
     /**
      * Debug de Box2D: ahora SIN escalas raras.

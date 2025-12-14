@@ -38,11 +38,13 @@ public class GestorSalas {
     }
 
     /** Cambio de sala cuando el jugador toca una puerta */
-    public void irASalaVecinaPorPuerta(DatosPuerta puerta, Body cuerpoJugador) {
-        if (puerta == null || cuerpoJugador == null) return;
+    public void irASalaVecinaPorPuerta(DatosPuerta puerta) {
+        if (puerta == null) return;
 
-        // La dirección del sensor es "desde el ORIGEN hacia el DESTINO"
-        // Pero si el jugador está parado del otro lado, la dirección efectiva es la opuesta.
+        Body cuerpoJugador = jugador.getCuerpoFisico();
+        if (cuerpoJugador == null) return;
+
+        // Dirección efectiva según desde qué lado se cruza
         Direccion dirEfectiva;
 
         if (salaActual == puerta.origen()) {
@@ -50,17 +52,15 @@ public class GestorSalas {
         } else if (salaActual == puerta.destino()) {
             dirEfectiva = puerta.direccion().opuesta();
         } else {
-            // Si esto pasa, es porque el sensor quedó asociado a puertas fuera del piso.
             Gdx.app.log("GestorSalas",
                 "ERROR: puerta no pertenece a salaActual=" + salaActual.nombreVisible +
                     " (origen=" + puerta.origen().nombreVisible + ", destino=" + puerta.destino().nombreVisible + ")");
             return;
         }
 
-        // 🔥 Fuente de verdad: conexionesPiso
+        // Fuente de verdad: conexionesPiso
         Habitacion nuevaSala = disposicion.getDestinoEnPiso(salaActual, dirEfectiva);
         if (nuevaSala == null) {
-            // Esto evita "puertas que no llevan a ningún lado"
             Gdx.app.log("GestorSalas",
                 "Puerta bloqueada (sin destino en piso): " + salaActual.nombreVisible + " por " + dirEfectiva);
             return;
@@ -72,21 +72,22 @@ public class GestorSalas {
         salaActual = nuevaSala;
 
         // Reposicionar jugador “adentro”
-        colocarJugadorEnSalaPorPuerta(nuevaSala, dirEntrada, cuerpoJugador);
+        colocarJugadorEnSalaPorPuerta(nuevaSala, dirEntrada);
 
-        // Centrar la cámara
+        // Centrar cámara
         camara.centrarEn(nuevaSala);
 
-        // Descubrir la sala (por si acá querés hacerlo y no en JuegoPrincipal)
+        // Descubrir sala (si querés hacerlo acá y no afuera)
         disposicion.descubrir(nuevaSala);
 
         Gdx.app.log("SALA", "Entraste a: " + nuevaSala.nombreVisible +
             " @(" + nuevaSala.gridX + "," + nuevaSala.gridY + ")");
     }
 
-    private void colocarJugadorEnSalaPorPuerta(Habitacion sala,
-                                               Direccion entrada,
-                                               Body cuerpoJugador) {
+    private void colocarJugadorEnSalaPorPuerta(Habitacion sala, Direccion entrada) {
+
+        Body cuerpoJugador = jugador.getCuerpoFisico();
+        if (cuerpoJugador == null) return;
 
         float baseX = sala.gridX * sala.ancho;
         float baseY = sala.gridY * sala.alto;
@@ -116,8 +117,6 @@ public class GestorSalas {
 
         cuerpoJugador.setLinearVelocity(0, 0);
         cuerpoJugador.setTransform(px, py, 0);
-
-        if (jugador != null) jugador.setCuerpoFisico(cuerpoJugador);
 
         Gdx.app.log("REUBICACION",
             "Jugador colocado por " + entrada + " en (" + px + "," + py + ")");

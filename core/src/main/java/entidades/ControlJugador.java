@@ -38,5 +38,12 @@ public class ControlJugador {
         } else {
             cuerpo.setLinearVelocity(0, 0);
         }
+
+        // Nuevo: Chequear si se está manteniendo presionado el botón para activar el puzzle
+        if (Gdx.input.isKeyPressed(Input.Keys.E)) {
+            jugador.activarBoton(true); // Activar el botón si se mantiene presionado
+        } else {
+            jugador.activarBoton(false); // Desactivar si no se mantiene presionado
+        }
     }
 }
