@@ -25,6 +25,16 @@ public class GestorDeEntidades {
     // Para no respawnear infinitamente ítems de BOTIN
     private final Set<Habitacion> botinesConItem = new HashSet<>();
 
+    // ===================== ENEMIGOS =====================
+    // Enemigos vivos en el mundo (no tienen vida, se limpian por evento/puzzle o cambio de sala)
+    private final List<Enemigo> enemigosMundo = new ArrayList<>();
+
+    // Para poder destruir bodies de enemigos sin buscar en el World
+    private final Map<Enemigo, Body> cuerposEnemigos = new HashMap<>();
+
+    // Para limpiar por sala (cuando salís o se resuelve puzzle)
+    private final Map<Habitacion, List<Enemigo>> enemigosPorSala = new HashMap<>();
+
     public GestorDeEntidades(World world) {
         this.world = world;
     }
@@ -105,6 +115,104 @@ public class GestorDeEntidades {
         return body;
     }
 
+    // ===================== ENEMIGOS =====================
+
+    /**
+     * Registra un enemigo (ya creado) y lo asocia a una sala.
+     * Recomendado: llamar desde EnemigosDesdeTiled luego de crear body+enemigo.
+     */
+    public void registrarEnemigo(Habitacion sala, Enemigo enemigo) {
+        if (enemigo == null) return;
+
+        enemigosMundo.add(enemigo);
+
+        if (enemigo.getCuerpoFisico() != null) {
+            cuerposEnemigos.put(enemigo, enemigo.getCuerpoFisico());
+        }
+
+        if (sala != null) {
+            enemigosPorSala.computeIfAbsent(sala, k -> new ArrayList<>()).add(enemigo);
+        }
+    }
+
+    public List<Enemigo> getEnemigosMundo() {
+        return Collections.unmodifiableList(enemigosMundo);
+    }
+
+    /**
+     * ✅ NUEVO: devuelve enemigos asociados a una sala (copia inmutable).
+     * Útil para iniciar animación de muerte SOLO a los de salaActual.
+     */
+    public List<Enemigo> getEnemigosDeSala(Habitacion sala) {
+        if (sala == null) return Collections.emptyList();
+        List<Enemigo> lista = enemigosPorSala.get(sala);
+        if (lista == null || lista.isEmpty()) return Collections.emptyList();
+        return Collections.unmodifiableList(lista);
+    }
+
+    /**
+     * Elimina todos los enemigos (por ejemplo, al resolver puzzle global o reset).
+     */
+    public void eliminarTodosLosEnemigos() {
+        for (Enemigo e : new ArrayList<>(enemigosMundo)) {
+            eliminarEnemigo(e);
+        }
+        enemigosPorSala.clear();
+    }
+
+    /**
+     * Elimina los enemigos de una sala específica (útil al salir de sala o al resolver puzzle de esa sala).
+     * ⚠️ Esto destruye instantáneo. Para animación de muerte, NO lo uses directamente:
+     * usá: getEnemigosDeSala + sprites.iniciarMuerte + eliminarEnemigo cuando termine.
+     */
+    public void eliminarEnemigosDeSala(Habitacion sala) {
+        if (sala == null) return;
+
+        List<Enemigo> lista = enemigosPorSala.get(sala);
+        if (lista == null || lista.isEmpty()) return;
+
+        List<Enemigo> copia = new ArrayList<>(lista);
+        for (Enemigo e : copia) {
+            eliminarEnemigo(e);
+        }
+
+        enemigosPorSala.remove(sala);
+    }
+
+    /**
+     * ✅ NUEVO: público para poder eliminar 1 enemigo cuando termina su anim de muerte.
+     */
+    public void eliminarEnemigo(Enemigo enemigo) {
+        if (enemigo == null) return;
+
+        Body b = cuerposEnemigos.remove(enemigo);
+        if (b == null) b = enemigo.getCuerpoFisico();
+
+        if (b != null) {
+            world.destroyBody(b);
+        }
+
+        enemigosMundo.remove(enemigo);
+
+        // quitarlo de cualquier lista de sala (costo pequeño, cantidad baja)
+        for (List<Enemigo> lista : enemigosPorSala.values()) {
+            lista.remove(enemigo);
+        }
+
+        // si alguna sala quedó con lista vacía, la limpiamos
+        enemigosPorSala.values().removeIf(List::isEmpty);
+    }
+
+    /**
+     * Update de enemigos (IA simple). Lo llamás desde Partida.
+     * Si no tenés j2 en alguna run, pasás null y el enemigo elige lo que corresponda.
+     */
+    public void actualizarEnemigos(float delta, Jugador j1, Jugador j2) {
+        for (Enemigo e : enemigosMundo) {
+            e.actualizar(delta, j1, j2);
+        }
+    }
+
     // ===================== PUERTAS VISUALES =====================
 
     public void registrarPuertaVisual(Habitacion sala, PuertaVisual pv) {
@@ -180,6 +288,6 @@ public class GestorDeEntidades {
     // ===================== RENDER =====================
 
     public void render(SpriteBatch batch) {
-        // futuro: dibujar sprites de jugadores/items
+        // futuro: dibujar sprites de jugadores/items/enemigos
     }
 }

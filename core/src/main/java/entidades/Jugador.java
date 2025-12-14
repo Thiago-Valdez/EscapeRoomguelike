@@ -1,24 +1,24 @@
 package entidades;
 
-import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+
 import java.util.*;
 
-public class Jugador {
+public class Jugador extends Entidad {
 
-    private final String nombre;
     private final int id;
 
     // Estética / apariencia
     private Genero genero;
     private Estilo estilo;
 
-    // Stats
+    // Stats específicos de jugador (vida sí queda acá porque dijiste que enemigos no tienen vida)
     private int vida;
     private int vidaMaxima;
-    private float velocidad;
 
-    // Cuerpo físico en Box2D
-    private Body cuerpoFisico;
+    private boolean puedeMoverse = true;
+    private float cooldownDanio = 0f;
 
     // Inventario simple (ítems pasivos)
     private final List<Item> objetos = new ArrayList<>();
@@ -26,21 +26,23 @@ public class Jugador {
     public Jugador(int id, String nombre,
                    Genero generoInicial,
                    Estilo estiloInicial) {
+
+        super(nombre, 200f, null);
+
         this.id = id;
-        this.nombre = nombre;
         this.genero = (generoInicial != null) ? generoInicial : Genero.MASCULINO;
         this.estilo = (estiloInicial != null) ? estiloInicial : Estilo.CLASICO;
 
         this.vidaMaxima = 3;
         this.vida = 3;
-        this.velocidad = 200f;
 
+        // velocidad ya quedó seteada en super(nombre, 200f, null)
     }
 
-    // ------------------ Nombre ------------------
+    // ------------------ ID ------------------
 
-    public String getNombre() {
-        return nombre;
+    public int getId() {
+        return id;
     }
 
     // ------------------ Estética ------------------
@@ -69,8 +71,7 @@ public class Jugador {
         return "player_" + genero.getSufijoSprite() + "_" + estilo.getSufijoSprite();
     }
 
-
-    // ------------------ Stats ------------------
+    // ------------------ Vida (solo jugador) ------------------
 
     public int getVida() {
         return vida;
@@ -94,26 +95,79 @@ public class Jugador {
         }
     }
 
-    public float getVelocidad() {
-        return velocidad;
-    }
-
-    public void setVelocidad(float velocidad) {
-        if (velocidad < 0f) velocidad = 0f;
-        this.velocidad = velocidad;
-    }
-
     // ------------------ Física ------------------
-
-    public Body getCuerpoFisico() {
-        return cuerpoFisico;
-    }
-
+    // OJO: Entidad ya tiene getCuerpoFisico()/setCuerpoFisico().
+    // Pero necesitamos mantener tu comportamiento de setUserData(this) como "fuente de verdad".
+    @Override
     public void setCuerpoFisico(Body cuerpoFisico) {
-        this.cuerpoFisico = cuerpoFisico;
-        this.cuerpoFisico.setUserData(this); // ✅ fuente de verdad
+        super.setCuerpoFisico(cuerpoFisico);
+        if (this.cuerpoFisico != null) {
+            this.cuerpoFisico.setUserData(this); // ✅ fuente de verdad
+        }
     }
 
+    public boolean puedeMoverse() {
+        return puedeMoverse && viva;
+    }
+
+
+    public void recibirDanio() {
+        if (!viva || enMuerte || inmune) return;
+
+        vida--;
+        enMuerte = true;
+        puedeMoverse = false;
+        tiempoMuerte = 0f;
+
+        // 🔒 congelar física
+        if (cuerpoFisico != null) {
+            cuerpoFisico.setLinearVelocity(0f, 0f);
+            cuerpoFisico.setAngularVelocity(0f);
+            cuerpoFisico.setType(BodyDef.BodyType.KinematicBody);
+        }
+
+        if (vida <= 0) {
+            viva = false;
+        }
+    }
+
+    public void updateEstado(float delta) {
+        if (enMuerte) {
+            tiempoMuerte += delta;
+
+            if (tiempoMuerte >= 3f) {
+                enMuerte = false;
+                puedeMoverse = true;
+                inmune = true;
+                tiempoInmunidad = 0f;
+            }
+
+            // 🔓 volver a dinámico
+            if (cuerpoFisico != null) {
+                cuerpoFisico.setType(BodyDef.BodyType.DynamicBody);
+            }
+        }
+
+        if (inmune) {
+            tiempoInmunidad += delta;
+            if (tiempoInmunidad >= 2f) { // inmunidad post-daño
+                inmune = false;
+            }
+        }
+    }
+
+    public boolean puedeRecibirDanio() {
+        return estaViva() && !enMuerte && !inmune && cooldownDanio <= 0f;
+    }
+
+    public void tick(float delta) {
+        if (cooldownDanio > 0f) cooldownDanio -= delta;
+        updateEstado(delta);
+    }
+
+    public void marcarHitCooldown(float segundos) {
+        cooldownDanio = Math.max(cooldownDanio, segundos);
+    }
 
     // ------------------ Inventario ------------------
 
@@ -142,9 +196,4 @@ public class Jugador {
             item.aplicarModificacion(this);
         }
     }
-
-    public int getId() {
-        return id;
-    }
-
 }

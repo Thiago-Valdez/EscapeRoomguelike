@@ -15,27 +15,15 @@ public class GestorSalas {
     private final CamaraDeSala camara;
     private final GestorDeEntidades gestorEntidades;
 
-    private Habitacion salaActual;
-
     public GestorSalas(DisposicionMapa disposicion,
                        FisicaMundo fisica,
                        CamaraDeSala camara,
-                       Habitacion salaInicial,
                        GestorDeEntidades gestorEntidades) {
 
         this.disposicion = disposicion;
         this.camara = camara;
         this.gestorEntidades = gestorEntidades;
-        this.salaActual = salaInicial;
-
-        if (camara != null) camara.centrarEn(salaInicial);
-
-        Gdx.app.log("SALA", "Sala inicial: " + salaInicial.nombreVisible +
-            " @(" + salaInicial.gridX + "," + salaInicial.gridY + ")");
-    }
-
-    public Habitacion getSalaActual() {
-        return salaActual;
+        // La sala inicial y el descubrimiento se manejan desde Partida.
     }
 
     /**
@@ -43,8 +31,8 @@ public class GestorSalas {
      * @param puerta DatosPuerta del sensor tocado
      * @param jugadorQueCruzoId id del jugador (1..N) que disparó el cambio
      */
-    public void irASalaVecinaPorPuerta(DatosPuerta puerta, int jugadorQueCruzoId) {
-        if (puerta == null) return;
+    public Habitacion irASalaVecinaPorPuerta(Habitacion salaActual, DatosPuerta puerta, int jugadorQueCruzoId) {
+        if (puerta == null) return null;
 
         // Dirección efectiva según desde qué lado se cruza
         Direccion dirEfectiva;
@@ -57,7 +45,7 @@ public class GestorSalas {
             Gdx.app.log("GestorSalas",
                 "ERROR: puerta no pertenece a salaActual=" + salaActual.nombreVisible +
                     " (origen=" + puerta.origen().nombreVisible + ", destino=" + puerta.destino().nombreVisible + ")");
-            return;
+            return null;
         }
 
         // Fuente de verdad: conexiones del piso
@@ -65,13 +53,10 @@ public class GestorSalas {
         if (nuevaSala == null) {
             Gdx.app.log("GestorSalas",
                 "Puerta bloqueada (sin destino en piso): " + salaActual.nombreVisible + " por " + dirEfectiva);
-            return;
+            return null;
         }
 
         Direccion entrada = dirEfectiva.opuesta();
-
-        // Cambiar sala
-        salaActual = nuevaSala;
 
         // ✅ Reposicionar jugadores dentro de la nueva sala
         colocarJugadoresEnSalaPorPuerta(nuevaSala, entrada, jugadorQueCruzoId);
@@ -79,11 +64,10 @@ public class GestorSalas {
         // Cámara (tu estilo actual: centrada por sala)
         if (camara != null) camara.centrarEn(nuevaSala);
 
-        // Descubrir sala
-        disposicion.descubrir(nuevaSala);
-
         Gdx.app.log("SALA", "Entraste a: " + nuevaSala.nombreVisible +
             " @(" + nuevaSala.gridX + "," + nuevaSala.gridY + ")");
+
+        return nuevaSala;
     }
 
     private void colocarJugadoresEnSalaPorPuerta(Habitacion sala, Direccion entrada, int jugadorQueCruzoId) {

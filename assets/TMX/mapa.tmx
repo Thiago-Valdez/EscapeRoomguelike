@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="80" height="80" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="218">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="80" height="80" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="238">
  <tileset firstgid="1" source="../Tilesets/FondoBlanco.tsx"/>
  <tileset firstgid="65" source="../Tilesets/FondoAzul.tsx"/>
  <tileset firstgid="129" source="../Tilesets/FondoRojo.tsx"/>
@@ -669,7 +669,7 @@
   <object id="189" x="1683.5" y="1168.5" width="25" height="27">
    <properties>
     <property name="jugador" value="1"/>
-    <property name="sala" value="COMBATE_3"/>
+    <property name="sala" value="COMBATE_1"/>
    </properties>
   </object>
   <object id="190" x="1875.5" y="1362.5" width="25" height="27">
@@ -760,6 +760,168 @@
    <properties>
     <property name="jugador" value="1"/>
     <property name="sala" value="COMBATE_10"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="6" name="enemigos">
+  <object id="218" x="591" y="1170" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_1"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="219" x="912.5" y="1168.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_1"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="220" x="1171.5" y="1169.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_2"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="221" x="1361.5" y="1168.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_2"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="222" x="1683.5" y="1353.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_3"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="223" x="1872.5" y="1155.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_3"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="224" x="2195.5" y="1174.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_4"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="225" x="2388.5" y="1365.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_4"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="226" x="57.5" y="1888.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_5"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="227" x="421.5" y="1663.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_5"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="228" x="564.5" y="1886.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_6"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="229" x="903.5" y="1618.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_6"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="230" x="1198.5" y="1906.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_7"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="231" x="1335.5" y="1908.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_7"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="232" x="1888.5" y="1665.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_8"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="233" x="1890.5" y="1887.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_8"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="234" x="2197.5" y="1888.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_9"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="235" x="2388.5" y="1663.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_9"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="236" x="168.5" y="2335.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="1"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_10"/>
+    <property name="velocidad" value="20"/>
+   </properties>
+  </object>
+  <object id="237" x="309.5" y="2340.5" width="27" height="27">
+   <properties>
+    <property name="jugadorObjetivo" value="2"/>
+    <property name="nombre" value="cyborg"/>
+    <property name="sala" value="COMBATE_10"/>
+    <property name="velocidad" value="20"/>
    </properties>
   </object>
  </objectgroup>

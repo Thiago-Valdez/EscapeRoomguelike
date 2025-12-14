@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 
-public class GeneradorParedesSalas {
+public class GeneradorSensoresPuertas {
 
     public interface ListenerPuerta {
         void onPuertaCreada(Fixture fixture,
@@ -34,7 +34,7 @@ public class GeneradorParedesSalas {
     /** 🔥 MUY IMPORTANTE: corre el sensor hacia adentro para que no se active desde la sala vecina*/
     private static final float OFFSET_SENSOR = 12f;
 
-    public GeneradorParedesSalas(FisicaMundo fisica, DisposicionMapa disposicion) {
+    public GeneradorSensoresPuertas(FisicaMundo fisica, DisposicionMapa disposicion) {
         this.world = fisica.world();
         this.disposicion = disposicion;
         this.camino = disposicion.getCamino();
@@ -45,23 +45,8 @@ public class GeneradorParedesSalas {
         Gdx.app.log("GEN_PUERTAS", "Camino tiene " + camino.size() + " salas");
 
         for (Habitacion h : camino) {
-            crearParedesRectangulares(h);
             crearSensoresPuertas(h, listener);
         }
-    }
-
-    private void crearParedesRectangulares(Habitacion h) {
-        float baseX = h.gridX * h.ancho;
-        float baseY = h.gridY * h.alto;
-
-        // NORTE
-        crearMuro(baseX + h.ancho / 2f, baseY + h.alto - GROSOR_MURO / 2f, h.ancho / 2f, GROSOR_MURO / 2f);
-        // SUR
-        crearMuro(baseX + h.ancho / 2f, baseY + GROSOR_MURO / 2f, h.ancho / 2f, GROSOR_MURO / 2f);
-        // OESTE
-        crearMuro(baseX + GROSOR_MURO / 2f, baseY + h.alto / 2f, GROSOR_MURO / 2f, h.alto / 2f);
-        // ESTE
-        crearMuro(baseX + h.ancho - GROSOR_MURO / 2f, baseY + h.alto / 2f, GROSOR_MURO / 2f, h.alto / 2f);
     }
 
     private void crearMuro(float cx, float cy, float halfW, float halfH) {

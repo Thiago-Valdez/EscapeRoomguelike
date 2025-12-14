@@ -14,6 +14,9 @@ public class ControlJugador {
     private final int keyLeft;
     private final int keyRight;
 
+    // Evita allocaciones por frame
+    private final Vector2 dir = new Vector2();
+
     public ControlJugador(Jugador jugador, int keyUp, int keyDown, int keyLeft, int keyRight) {
         this.jugador = jugador;
         this.keyUp = keyUp;
@@ -26,6 +29,11 @@ public class ControlJugador {
         Body cuerpo = jugador.getCuerpoFisico();
         if (cuerpo == null) return;
 
+        if (!jugador.puedeMoverse()) {
+            cuerpo.setLinearVelocity(0, 0);
+            return;
+        }
+
         float dx = 0;
         float dy = 0;
 
@@ -34,7 +42,7 @@ public class ControlJugador {
         if (Gdx.input.isKeyPressed(keyLeft)) dx -= 1;
         if (Gdx.input.isKeyPressed(keyRight)) dx += 1;
 
-        Vector2 dir = new Vector2(dx, dy);
+        dir.set(dx, dy);
 
         if (dir.len2() > 0) {
             dir.nor();
