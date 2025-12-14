@@ -9,8 +9,17 @@ public class ControlJugador {
 
     private final Jugador jugador;
 
-    public ControlJugador(Jugador jugador) {
+    private final int keyUp;
+    private final int keyDown;
+    private final int keyLeft;
+    private final int keyRight;
+
+    public ControlJugador(Jugador jugador, int keyUp, int keyDown, int keyLeft, int keyRight) {
         this.jugador = jugador;
+        this.keyUp = keyUp;
+        this.keyDown = keyDown;
+        this.keyLeft = keyLeft;
+        this.keyRight = keyRight;
     }
 
     public void actualizar(float delta) {
@@ -20,30 +29,19 @@ public class ControlJugador {
         float dx = 0;
         float dy = 0;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) dy += 1;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) dy -= 1;
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) dx -= 1;
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) dx += 1;
+        if (Gdx.input.isKeyPressed(keyUp)) dy += 1;
+        if (Gdx.input.isKeyPressed(keyDown)) dy -= 1;
+        if (Gdx.input.isKeyPressed(keyLeft)) dx -= 1;
+        if (Gdx.input.isKeyPressed(keyRight)) dx += 1;
 
         Vector2 dir = new Vector2(dx, dy);
 
         if (dir.len2() > 0) {
             dir.nor();
             float velocidad = jugador.getVelocidad();
-
-            // opcional: log de verificación
-            // Gdx.app.log("VEL", "stat=" + velocidad + " bodyHash=" + System.identityHashCode(cuerpo));
-
             cuerpo.setLinearVelocity(dir.x * velocidad, dir.y * velocidad);
         } else {
             cuerpo.setLinearVelocity(0, 0);
-        }
-
-        // Nuevo: Chequear si se está manteniendo presionado el botón para activar el puzzle
-        if (Gdx.input.isKeyPressed(Input.Keys.E)) {
-            jugador.activarBoton(true); // Activar el botón si se mantiene presionado
-        } else {
-            jugador.activarBoton(false); // Desactivar si no se mantiene presionado
         }
     }
 }

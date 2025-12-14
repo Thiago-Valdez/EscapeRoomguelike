@@ -3,25 +3,18 @@ package entidades;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.*;
-
-import fisica.FisicaMundo;
 import mapa.Habitacion;
 import mapa.PuertaVisual;
 import mapa.TipoSala;
 
 import java.util.*;
 
-/**
- * Administra entidades del juego:
- *  - Jugador (cuerpo de Box2D)
- *  - Ítems en el mundo (pickups)
- *
- *  TODO se maneja en PIXELES.
- */
 public class GestorDeEntidades {
 
     private final World world;
-    private final Jugador jugador;
+
+    // ✅ ahora soporta N jugadores
+    private final Map<Integer, Jugador> jugadores = new HashMap<>();
 
     private final Map<Habitacion, List<PuertaVisual>> puertasPorSala = new HashMap<>();
 
@@ -32,27 +25,56 @@ public class GestorDeEntidades {
     // Para no respawnear infinitamente ítems de BOTIN
     private final Set<Habitacion> botinesConItem = new HashSet<>();
 
-    public GestorDeEntidades(World world, Jugador jugador) {
-        this.world = world; // ✅ USA el world que le pasan
-        this.jugador = jugador;
+    public GestorDeEntidades(World world) {
+        this.world = world;
     }
 
-    // ================= JUGADOR ===================
+    public World getWorld() {
+        return world;
+    }
+
+    // ===================== JUGADORES =====================
+
+    public void registrarJugador(Jugador jugador) {
+        if (jugador == null) return;
+        jugadores.put(jugador.getId(), jugador);
+    }
+
+    public Jugador getJugador(int id) {
+        return jugadores.get(id);
+    }
+
+    public Collection<Jugador> getJugadores() {
+        return Collections.unmodifiableCollection(jugadores.values());
+    }
+
+    public Body getCuerpoJugador(int id) {
+        Jugador j = jugadores.get(id);
+        return (j != null) ? j.getCuerpoFisico() : null;
+    }
 
     /**
      * Crea (si no existe) o reposiciona el cuerpo del jugador en la sala indicada.
-     * px,py están en PIXELES y se usan tal cual.
+     * px,py están en PIXELES.
+     *
+     * ✅ Fuente de verdad de identidad:
+     * - body.userData = Jugador (en Jugador.setCuerpoFisico)
+     *
+     * Fixture userData NO se usa para id. (Podés dejarlo como tag debug opcional)
      */
-    public Body crearJugadorEnSalaInicial(Habitacion sala, float px, float py) {
+    public Body crearOReposicionarJugador(int id, Habitacion sala, float px, float py) {
+        Jugador jugador = jugadores.get(id);
+        if (jugador == null) return null;
 
-        if (jugador.getCuerpoFisico() == null) {
+        Body body = jugador.getCuerpoFisico();
 
+        if (body == null) {
             BodyDef bd = new BodyDef();
             bd.type = BodyDef.BodyType.DynamicBody;
             bd.position.set(px, py);
             bd.fixedRotation = true;
 
-            Body body = world.createBody(bd);
+            body = world.createBody(bd);
 
             CircleShape shape = new CircleShape();
             shape.setRadius(12f);
@@ -63,41 +85,30 @@ public class GestorDeEntidades {
             fd.friction = 0f;
 
             Fixture f = body.createFixture(fd);
+
+            // ✅ tag opcional solo para debug (NO es fuente de verdad)
             f.setUserData("jugador");
 
             shape.dispose();
 
+            // ✅ esto pone body.userData = jugador
             jugador.setCuerpoFisico(body);
 
-            System.out.println("[GestorEntidades] Jugador creado en (" + px + "," + py + ")");
+            System.out.println("[GestorEntidades] Jugador" + id + " creado en (" + px + "," + py + ")");
         } else {
-            Body body = jugador.getCuerpoFisico();
             body.setTransform(px, py, body.getAngle());
             body.setLinearVelocity(0f, 0f);
 
-            System.out.println("[GestorEntidades] Jugador movido a (" + px + "," + py + ")");
+            System.out.println("[GestorEntidades] Jugador" + id + " movido a (" + px + "," + py + ")");
         }
 
-        return jugador.getCuerpoFisico();
+        return body;
     }
 
-
-    // ================= ÍTEMS / ACTUALIZACIÓN ===================
-
-    /**
-     * Lógica que se ejecuta cada frame.
-     * Por ahora solo usamos salaActual para spawnear ítems en salas BOTIN.
-     */
-    public void actualizar(float delta, Habitacion salaActual) {
-        if (salaActual != null && salaActual.tipo == TipoSala.BOTIN) {
-            intentarSpawnearItemEnBotin(salaActual);
-        }
-    }
+    // ===================== PUERTAS VISUALES =====================
 
     public void registrarPuertaVisual(Habitacion sala, PuertaVisual pv) {
-        puertasPorSala
-            .computeIfAbsent(sala, k -> new ArrayList<>())
-            .add(pv);
+        puertasPorSala.computeIfAbsent(sala, k -> new ArrayList<>()).add(pv);
     }
 
     public void renderPuertas(ShapeRenderer sr, Habitacion salaActual) {
@@ -106,17 +117,19 @@ public class GestorDeEntidades {
         List<PuertaVisual> puertas = puertasPorSala.get(salaActual);
         if (puertas == null) return;
 
-        for (PuertaVisual p : puertas) {
-            p.render(sr);
+        for (PuertaVisual p : puertas) p.render(sr);
+    }
+
+    // ===================== ITEMS / UPDATE =====================
+
+    public void actualizar(float delta, Habitacion salaActual) {
+        if (salaActual != null && salaActual.tipo == TipoSala.BOTIN) {
+            intentarSpawnearItemEnBotin(salaActual);
         }
     }
 
-
-
     private void intentarSpawnearItemEnBotin(Habitacion salaBotin) {
-        if (botinesConItem.contains(salaBotin)) {
-            return; // ya tiene ítem
-        }
+        if (botinesConItem.contains(salaBotin)) return;
 
         Item item = ItemTipo.generarAleatorioPorRareza();
         if (item == null) return;
@@ -129,11 +142,11 @@ public class GestorDeEntidades {
 
         BodyDef bd = new BodyDef();
         bd.type = BodyDef.BodyType.StaticBody;
-        bd.position.set(px, py); // PIXELES
+        bd.position.set(px, py);
         Body body = world.createBody(bd);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(12f); // PIXELES
+        shape.setRadius(12f);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
@@ -142,7 +155,6 @@ public class GestorDeEntidades {
         Fixture fixture = body.createFixture(fd);
         shape.dispose();
 
-        // Ponemos el propio Item como userData para reconocerlo en ContactListener
         fixture.setUserData(item);
 
         itemsMundo.add(item);
@@ -150,32 +162,24 @@ public class GestorDeEntidades {
         botinesConItem.add(salaBotin);
     }
 
-    /** Llamado desde el ContactListener cuando se recoge un item. */
-    public void recogerItem(Item item) {
+    /** ✅ Coop real: el item se aplica al jugador que lo recogió */
+    public void recogerItem(int jugadorId, Item item) {
         if (item == null) return;
 
-        jugador.agregarObjeto(item);
+        Jugador jugador = jugadores.get(jugadorId);
+        if (jugador == null) return;
 
-        // 🔥 recalculamos TODOS los stats
+        jugador.agregarObjeto(item);
         jugador.reaplicarEfectosDeItems();
 
         Body body = cuerposItems.remove(item);
-        if (body != null) {
-            world.destroyBody(body);
-        }
+        if (body != null) world.destroyBody(body);
         itemsMundo.remove(item);
     }
 
-
-
-    public World getWorld() {
-        return world;
-    }
-
-    // ================= RENDER ===================
+    // ===================== RENDER =====================
 
     public void render(SpriteBatch batch) {
-        // Por ahora el jugador y los ítems solo se ven por Box2DDebugRenderer.
-        // Más adelante, cuando tengas sprites, los dibujamos acá.
+        // futuro: dibujar sprites de jugadores/items
     }
 }

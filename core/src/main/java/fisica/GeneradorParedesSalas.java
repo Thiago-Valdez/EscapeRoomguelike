@@ -11,10 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Genera paredes y sensores de puertas SOLO para las conexiones válidas del piso (conexionesPiso).
- * Todo está en PIXELES (sin PPM).
- */
+
 public class GeneradorParedesSalas {
 
     public interface ListenerPuerta {
@@ -34,7 +31,7 @@ public class GeneradorParedesSalas {
     private static final float ANCHO_PUERTA = 96f;
     private static final float ALTO_PUERTA  = 96f;
 
-    /** 🔥 MUY IMPORTANTE: corre el sensor hacia adentro para que no se active desde la sala vecina */
+    /** 🔥 MUY IMPORTANTE: corre el sensor hacia adentro para que no se active desde la sala vecina*/
     private static final float OFFSET_SENSOR = 12f;
 
     public GeneradorParedesSalas(FisicaMundo fisica, DisposicionMapa disposicion) {
@@ -172,3 +169,4 @@ public class GeneradorParedesSalas {
         crearMuro(px, py, halfW, halfH);
     }
 }
+

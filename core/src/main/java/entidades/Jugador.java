@@ -6,6 +6,7 @@ import java.util.*;
 public class Jugador {
 
     private final String nombre;
+    private final int id;
 
     // Estética / apariencia
     private Genero genero;
@@ -19,15 +20,13 @@ public class Jugador {
     // Cuerpo físico en Box2D
     private Body cuerpoFisico;
 
-    private boolean botonPresionado = false; // Nuevo atributo para detectar si el botón está presionado
-
     // Inventario simple (ítems pasivos)
     private final List<Item> objetos = new ArrayList<>();
 
-    public Jugador(String nombre,
+    public Jugador(int id, String nombre,
                    Genero generoInicial,
                    Estilo estiloInicial) {
-
+        this.id = id;
         this.nombre = nombre;
         this.genero = (generoInicial != null) ? generoInicial : Genero.MASCULINO;
         this.estilo = (estiloInicial != null) ? estiloInicial : Estilo.CLASICO;
@@ -70,6 +69,7 @@ public class Jugador {
         return "player_" + genero.getSufijoSprite() + "_" + estilo.getSufijoSprite();
     }
 
+
     // ------------------ Stats ------------------
 
     public int getVida() {
@@ -111,17 +111,7 @@ public class Jugador {
 
     public void setCuerpoFisico(Body cuerpoFisico) {
         this.cuerpoFisico = cuerpoFisico;
-        this.cuerpoFisico.setUserData(this); // CLAVE
-    }
-
-    // Este método actualizará el estado del botón
-    public void activarBoton(boolean estado) {
-        this.botonPresionado = estado;
-    }
-
-    // Método que verifica si el botón está presionado
-    public boolean estaBotonPresionado() {
-        return botonPresionado;
+        this.cuerpoFisico.setUserData(this); // ✅ fuente de verdad
     }
 
 
@@ -151,6 +141,10 @@ public class Jugador {
         for (Item item : objetos) {
             item.aplicarModificacion(this);
         }
+    }
+
+    public int getId() {
+        return id;
     }
 
 }

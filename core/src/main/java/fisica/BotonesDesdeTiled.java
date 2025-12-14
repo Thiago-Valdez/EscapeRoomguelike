@@ -13,43 +13,75 @@ import mapa.Habitacion;
 
 public class BotonesDesdeTiled {
 
+    private static final String LAYER_NAME = "botones";
+
     public static void crearBotones(TiledMap map, World world) {
-        MapLayer layer = map.getLayers().get("botones");
+        if (map == null || world == null) {
+            Gdx.app.log("BotonesDesdeTiled", "map/world null -> no se crean botones");
+            return;
+        }
+
+        MapLayer layer = map.getLayers().get(LAYER_NAME);
         if (layer == null) {
-            Gdx.app.log("BotonesDesdeTiled", "No existe la capa 'botones'");
+            Gdx.app.log("BotonesDesdeTiled", "No existe la capa '" + LAYER_NAME + "'");
             return;
         }
 
         int creados = 0;
+        int ignorados = 0;
 
         for (MapObject obj : layer.getObjects()) {
 
+            // Hoy soportamos rectángulos (lo más común en Tiled).
             if (!(obj instanceof RectangleMapObject rmo)) {
-                continue; // por ahora solo rectángulos
+                ignorados++;
+                Gdx.app.log("BotonesDesdeTiled",
+                    "Objeto ignorado (no es rect): name=" + safeName(obj) +
+                        " type=" + obj.getClass().getSimpleName());
+                continue;
             }
 
             Rectangle rect = rmo.getRectangle();
-
-            // Propiedades obligatorias: sala (string) y jugador (int)
-            String salaStr = getString(obj, "sala", null);
-            int jugadorId = getInt(obj, "jugador", -1);
-
-            if (salaStr == null || jugadorId < 1 || jugadorId > 2) {
+            if (rect == null || rect.width <= 0 || rect.height <= 0) {
+                ignorados++;
                 Gdx.app.log("BotonesDesdeTiled",
-                    "Botón inválido (faltan props): sala=" + salaStr + " jugador=" + jugadorId);
+                    "Rect inválido: name=" + safeName(obj) +
+                        " rect=" + rect);
+                continue;
+            }
+
+            // Props obligatorias
+            String salaStr = getString(obj, "sala", null);
+            int jugadorId  = getInt(obj, "jugador", -1);
+
+            if (salaStr == null || salaStr.isBlank()) {
+                ignorados++;
+                Gdx.app.log("BotonesDesdeTiled",
+                    "Botón inválido: falta prop 'sala'. name=" + safeName(obj));
+                continue;
+            }
+
+            if (jugadorId < 1 || jugadorId > 2) {
+                ignorados++;
+                Gdx.app.log("BotonesDesdeTiled",
+                    "Botón inválido: prop 'jugador' debe ser 1 o 2. name=" + safeName(obj) +
+                        " jugador=" + jugadorId);
                 continue;
             }
 
             Habitacion sala;
             try {
                 // Debe coincidir EXACTO con el enum Habitacion (ej: ACERTIJO_5)
-                sala = Habitacion.valueOf(salaStr);
+                sala = Habitacion.valueOf(salaStr.trim());
             } catch (Exception e) {
-                Gdx.app.log("BotonesDesdeTiled", "Sala inválida en botón: " + salaStr);
+                ignorados++;
+                Gdx.app.log("BotonesDesdeTiled",
+                    "Sala inválida en botón: name=" + safeName(obj) +
+                        " salaStr=" + salaStr);
                 continue;
             }
 
-            // Crear body estático + sensor (en píxeles, como tu mundo)
+            // ✅ Crear body estático + sensor (en píxeles)
             BodyDef bd = new BodyDef();
             bd.type = BodyDef.BodyType.StaticBody;
             bd.position.set(rect.x + rect.width / 2f, rect.y + rect.height / 2f);
@@ -66,16 +98,22 @@ public class BotonesDesdeTiled {
             Fixture fx = body.createFixture(fd);
             shape.dispose();
 
-            // userData: DatosBoton(sala, jugadorId)
+            // 🔥 CLAVE: userData = DatosBoton(sala, jugadorId)
             fx.setUserData(new DatosBoton(sala, jugadorId));
 
-            // opcional: para debug
-            body.setUserData("boton");
+            // opcional: debug
+            body.setUserData("boton:" + sala.name() + ":J" + jugadorId);
 
             creados++;
         }
 
-        Gdx.app.log("BotonesDesdeTiled", "Botones creados: " + creados);
+        Gdx.app.log("BotonesDesdeTiled",
+            "Botones creados: " + creados + " | ignorados: " + ignorados);
+    }
+
+    private static String safeName(MapObject obj) {
+        String n = obj.getName();
+        return (n == null) ? "<sin-nombre>" : n;
     }
 
     private static String getString(MapObject obj, String key, String def) {

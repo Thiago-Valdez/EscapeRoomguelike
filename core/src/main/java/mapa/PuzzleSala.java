@@ -1,6 +1,6 @@
 package mapa;
 
-import entidades.Jugador;
+/*import entidades.Jugador;
 
 public class PuzzleSala {
 
@@ -34,4 +34,4 @@ public class PuzzleSala {
     public boolean esSalaResuelta() {
         return resuelto;
     }
-}
+}*/

@@ -1,15 +1,12 @@
 package pantallas;
 
 import camara.CamaraDeSala;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import control.GestorSalas;
 import control.ControlPuzzlePorSala;
-import entidades.ControlJugador;
-import entidades.Genero;
-import entidades.Jugador;
-import entidades.GestorDeEntidades;
-import entidades.Estilo;
+import entidades.*;
 import fisica.BotonesDesdeTiled;
 import mapa.PuertaVisual;
 import fisica.ColisionesDesdeTiled;
@@ -67,11 +64,10 @@ public class JuegoPrincipal implements Screen {
     // --- Jugador + control ---
     private Jugador jugador1;
     private Jugador jugador2;
-    private ControlJugador controlJugador;
+    private ControlJugador controlJugador1;
+    private ControlJugador controlJugador2;
     private GestorDeEntidades gestorEntidades;
 
-
-    private PuzzleSala puzzleSala;
 
 
     // --- HUD ---
@@ -82,10 +78,10 @@ public class JuegoPrincipal implements Screen {
     private final List<ListenerCambioSala> listenersCambioSala = new ArrayList<>();
 
     // --- Cola de puertas tocadas (para evitar modificar Box2D dentro del callback) ---
-    private final List<DatosPuerta> puertasPendientes = new ArrayList<>();
+    private final List<EventoPuerta> puertasPendientes = new ArrayList<>();
 
     // arriba con las otras colas
-    private final List<entidades.Item> itemsPendientes = new ArrayList<>();
+    private final List<EventoPickup> itemsPendientes = new ArrayList<>();
 
     private final List<EventoBoton> eventosBoton = new ArrayList<>();
 
@@ -97,7 +93,7 @@ public class JuegoPrincipal implements Screen {
     private int framesBloqueoPuertas = 0;
 
     // Modo temporal para testear con 1 solo jugador
-    private static final boolean MODO_UN_JUGADOR = true;
+    private static final boolean MODO_UN_JUGADOR = false;
 
     public JuegoPrincipal(Principal game) {
         this.game = game;
@@ -169,16 +165,20 @@ public class JuegoPrincipal implements Screen {
         float py = baseY + salaActual.alto / 2f;
 
         // 7) Crear jugador
-        jugador1 = new Jugador("Jugador 1", Genero.MASCULINO, Estilo.CLASICO);
-        jugador2 = new Jugador("Jugador 2", Genero.FEMENINO, Estilo.CLASICO);
+        jugador1 = new Jugador(1,"Jugador 1", Genero.MASCULINO, Estilo.CLASICO);
+        jugador2 = new Jugador(2,"Jugador 2", Genero.FEMENINO, Estilo.CLASICO);
 
-        puzzleSala = new PuzzleSala();
 
 
         // 8) Gestor de entidades (🔥 ANTES de crear puertas visuales)
-        gestorEntidades = new GestorDeEntidades(world, jugador1);
+        gestorEntidades = new GestorDeEntidades(world);
+        gestorEntidades.registrarJugador(jugador1);
+        gestorEntidades.registrarJugador(jugador2);
 
-        gestorEntidades.crearJugadorEnSalaInicial(salaActual, px, py);
+        gestorEntidades.crearOReposicionarJugador(1, salaActual, px - 32f, py);
+        gestorEntidades.crearOReposicionarJugador(2, salaActual, px + 32f, py);
+
+
 
         // 9) Generar paredes + sensores (y registrar puertas visuales)
         GeneradorParedesSalas genParedes = new GeneradorParedesSalas(fisica, disposicion);
@@ -222,14 +222,20 @@ public class JuegoPrincipal implements Screen {
 
         });
 
-        Vector2 posJugador = jugador1.getCuerpoFisico().getPosition();
-        camaraSala.centrarEn(posJugador.x, posJugador.y);
+        Vector2 p1 = jugador1.getCuerpoFisico().getPosition();
+        Vector2 p2 = jugador2.getCuerpoFisico().getPosition();
+        camaraSala.centrarEn((p1.x + p2.x) / 2f, (p1.y + p2.y) / 2f);
+
 
         // 10) Control de jugador
-        controlJugador = new ControlJugador(jugador1);
+        controlJugador1 = new ControlJugador(jugador1, Input.Keys.W, Input.Keys.S, Input.Keys.A, Input.Keys.D);
+        controlJugador2 = new ControlJugador(jugador2, Input.Keys.UP, Input.Keys.DOWN, Input.Keys.LEFT, Input.Keys.RIGHT);
+
 
         // 11) Gestor de salas
-        gestorSalas = new GestorSalas(disposicion, fisica, camaraSala, salaActual, jugador1);
+        gestorSalas = new GestorSalas(disposicion, fisica, camaraSala, salaActual, gestorEntidades);
+
+
 
         // 12) HUD
         hud = new HudJuego(disposicion, jugador1);
@@ -244,8 +250,9 @@ public class JuegoPrincipal implements Screen {
                 Fixture a = contact.getFixtureA();
                 Fixture b = contact.getFixtureB();
 
-                manejarContacto(contact.getFixtureA());
-                manejarContacto(contact.getFixtureB());
+                manejarContacto(contact.getFixtureA(), contact.getFixtureB());
+                manejarContacto(contact.getFixtureB(), contact.getFixtureA());
+
 
                 // 🔥 nuevo: intentar detectar pickup
                 intentarEncolarPickup(a, b);
@@ -270,19 +277,27 @@ public class JuegoPrincipal implements Screen {
     }
 
     /** Encola contactos; no modificamos Box2D dentro del callback. */
-    private void manejarContacto(Fixture fixture) {
-        if (fixture == null) return;
+    private void manejarContacto(Fixture puertaFx, Fixture otroFx) {
+        if (puertaFx == null || otroFx == null) return;
         if (framesBloqueoPuertas > 0) return;
 
-        Object ud = fixture.getUserData();
-        if (ud instanceof DatosPuerta puerta) {
-            if (salaActual == puerta.origen() || salaActual == puerta.destino()) {
-                puertasPendientes.add(puerta);
-            }
+        Object ud = puertaFx.getUserData();
+        if (!(ud instanceof DatosPuerta puerta)) return;
+
+        int jugadorId = getJugadorId(otroFx);
+        if (jugadorId == -1) return;
+
+        // Solo si la puerta pertenece a esta sala
+        if (salaActual == puerta.origen() || salaActual == puerta.destino()) {
+            puertasPendientes.add(new EventoPuerta(puerta, jugadorId));
         }
     }
 
+
+
     private void procesarPuertasPendientes() {
+
+        // puertas cerradas por puzzle/combat/etc
         if (controlPuzzle != null && controlPuzzle.estaBloqueada(salaActual)) {
             puertasPendientes.clear();
             return;
@@ -295,9 +310,9 @@ public class JuegoPrincipal implements Screen {
             return;
         }
 
-        DatosPuerta puerta = puertasPendientes.get(0);
+        EventoPuerta ev = puertasPendientes.get(0);
 
-        gestorSalas.irASalaVecinaPorPuerta(puerta);
+        gestorSalas.irASalaVecinaPorPuerta(ev.puerta(), ev.jugadorId());
 
         Habitacion nueva = gestorSalas.getSalaActual();
         if (nueva != null) {
@@ -314,16 +329,20 @@ public class JuegoPrincipal implements Screen {
     }
 
 
+
+
     private void intentarEncolarPickup(Fixture jugadorFx, Fixture otroFx) {
         if (jugadorFx == null || otroFx == null) return;
 
-        if (!esJugador(jugadorFx)) return;
+        int jugadorId = getJugadorId(jugadorFx);
+        if (jugadorId == -1) return;
 
         Object ud = otroFx.getUserData();
         if (ud instanceof entidades.Item item) {
-            itemsPendientes.add(item);
+            itemsPendientes.add(new EventoPickup(item, jugadorId));
         }
     }
+
 
     private void intentarEncolarBoton(Fixture jugadorFx, Fixture otroFx, boolean down) {
         if (jugadorFx == null || otroFx == null) return;
@@ -342,21 +361,24 @@ public class JuegoPrincipal implements Screen {
 
     private boolean esJugador(Fixture fx) {
         Object ud = fx.getUserData();
-        if ("jugador".equals(ud)) return true;
-
-        // fallback: si tu Jugador guarda el userData en el Body
-        Body b = fx.getBody();
-        if (b != null && b.getUserData() instanceof entidades.Jugador) return true;
-
-        return false;
+        return (ud instanceof String s) && s.startsWith("jugador");
     }
 
     private int getJugadorId(Fixture fx) {
-        Object ud = fx.getUserData();
-        if ("jugador".equals(ud)) return 1; // por ahora
-        if (fx.getBody() != null && fx.getBody().getUserData() instanceof entidades.Jugador) return 1;
+        if (fx == null) return -1;
+
+        Body b = fx.getBody();
+        if (b == null) return -1;
+
+        Object ud = b.getUserData();
+        if (ud instanceof Jugador j) return j.getId();
+
         return -1;
     }
+
+
+
+
 
 
 
@@ -366,9 +388,9 @@ public class JuegoPrincipal implements Screen {
 
         gestorEntidades.actualizar(delta, salaActual);
 
-        if (controlJugador != null) {
-            controlJugador.actualizar(delta);
-        }
+        if (controlJugador1 != null) controlJugador1.actualizar(delta);
+        if (controlJugador2 != null) controlJugador2.actualizar(delta);
+
 
         fisica.step(delta);
         procesarPuertasPendientes();
@@ -417,12 +439,16 @@ public class JuegoPrincipal implements Screen {
     private void procesarItemsPendientes() {
         if (itemsPendientes.isEmpty()) return;
 
-        // procesá 1 por frame o todos; yo haría todos
-        for (entidades.Item it : itemsPendientes) {
-            gestorEntidades.recogerItem(it);
+        // evita duplicados por frame
+        java.util.Set<entidades.Item> yaProcesados = new java.util.HashSet<>();
+
+        for (EventoPickup ev : itemsPendientes) {
+            if (!yaProcesados.add(ev.item())) continue;
+            gestorEntidades.recogerItem(ev.jugadorId(), ev.item());
         }
         itemsPendientes.clear();
     }
+
 
     private void procesarBotonesPendientes() {
         if (eventosBoton.isEmpty()) return;

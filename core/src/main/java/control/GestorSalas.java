@@ -1,6 +1,7 @@
 package control;
 
 import camara.CamaraDeSala;
+import entidades.GestorDeEntidades;
 import entidades.Jugador;
 import fisica.FisicaMundo;
 import mapa.*;
@@ -12,7 +13,7 @@ public class GestorSalas {
 
     private final DisposicionMapa disposicion;
     private final CamaraDeSala camara;
-    private final Jugador jugador;
+    private final GestorDeEntidades gestorEntidades;
 
     private Habitacion salaActual;
 
@@ -20,11 +21,11 @@ public class GestorSalas {
                        FisicaMundo fisica,
                        CamaraDeSala camara,
                        Habitacion salaInicial,
-                       Jugador jugador) {
+                       GestorDeEntidades gestorEntidades) {
 
         this.disposicion = disposicion;
         this.camara = camara;
-        this.jugador = jugador;
+        this.gestorEntidades = gestorEntidades;
         this.salaActual = salaInicial;
 
         if (camara != null) camara.centrarEn(salaInicial);
@@ -37,12 +38,13 @@ public class GestorSalas {
         return salaActual;
     }
 
-    /** Cambio de sala cuando el jugador toca una puerta */
-    public void irASalaVecinaPorPuerta(DatosPuerta puerta) {
+    /**
+     * Cambio de sala cuando el jugador toca una puerta.
+     * @param puerta DatosPuerta del sensor tocado
+     * @param jugadorQueCruzoId id del jugador (1..N) que disparó el cambio
+     */
+    public void irASalaVecinaPorPuerta(DatosPuerta puerta, int jugadorQueCruzoId) {
         if (puerta == null) return;
-
-        Body cuerpoJugador = jugador.getCuerpoFisico();
-        if (cuerpoJugador == null) return;
 
         // Dirección efectiva según desde qué lado se cruza
         Direccion dirEfectiva;
@@ -58,7 +60,7 @@ public class GestorSalas {
             return;
         }
 
-        // Fuente de verdad: conexionesPiso
+        // Fuente de verdad: conexiones del piso
         Habitacion nuevaSala = disposicion.getDestinoEnPiso(salaActual, dirEfectiva);
         if (nuevaSala == null) {
             Gdx.app.log("GestorSalas",
@@ -66,41 +68,71 @@ public class GestorSalas {
             return;
         }
 
-        Direccion dirEntrada = dirEfectiva.opuesta();
+        Direccion entrada = dirEfectiva.opuesta();
 
         // Cambiar sala
         salaActual = nuevaSala;
 
-        // Reposicionar jugador “adentro”
-        colocarJugadorEnSalaPorPuerta(nuevaSala, dirEntrada);
+        // ✅ Reposicionar jugadores dentro de la nueva sala
+        colocarJugadoresEnSalaPorPuerta(nuevaSala, entrada, jugadorQueCruzoId);
 
-        // Centrar cámara
-        camara.centrarEn(nuevaSala);
+        // Cámara (tu estilo actual: centrada por sala)
+        if (camara != null) camara.centrarEn(nuevaSala);
 
-        // Descubrir sala (si querés hacerlo acá y no afuera)
+        // Descubrir sala
         disposicion.descubrir(nuevaSala);
 
         Gdx.app.log("SALA", "Entraste a: " + nuevaSala.nombreVisible +
             " @(" + nuevaSala.gridX + "," + nuevaSala.gridY + ")");
     }
 
-    private void colocarJugadorEnSalaPorPuerta(Habitacion sala, Direccion entrada) {
+    private void colocarJugadoresEnSalaPorPuerta(Habitacion sala, Direccion entrada, int jugadorQueCruzoId) {
 
-        Body cuerpoJugador = jugador.getCuerpoFisico();
-        if (cuerpoJugador == null) return;
+        // Calculamos el punto base de spawn (entrada dentro de la sala)
+        float[] p = calcularPuntoEntrada(sala, entrada);
+        float px = p[0];
+        float py = p[1];
+
+        // Jugador que cruzó: justo en la entrada
+        colocarJugadorEn(px, py, jugadorQueCruzoId);
+
+        // El resto: cerca, con offset lateral para evitar solaparse y re-tocar sensores
+        float lateral = 48f;
+
+        for (Jugador j : gestorEntidades.getJugadores()) {
+            int id = j.getId();
+            if (id == jugadorQueCruzoId) continue;
+
+            float ox = px;
+            float oy = py;
+
+            // offset perpendicular a la entrada
+            switch (entrada) {
+                case NORTE, SUR -> ox += lateral;
+                case ESTE, OESTE -> oy += lateral;
+            }
+
+            colocarJugadorEn(ox, oy, id);
+
+            // si hay más de 2 jugadores, apilamos offsets
+            lateral += 48f;
+        }
+    }
+
+    private float[] calcularPuntoEntrada(Habitacion sala, Direccion entrada) {
 
         float baseX = sala.gridX * sala.ancho;
         float baseY = sala.gridY * sala.alto;
 
         EspecificacionPuerta ep = sala.puertas.get(entrada);
+
         float px, py;
 
         if (ep == null) {
+            // fallback al centro
             px = baseX + sala.ancho / 2f;
             py = baseY + sala.alto / 2f;
-            cuerpoJugador.setLinearVelocity(0, 0);
-            cuerpoJugador.setTransform(px, py, 0);
-            return;
+            return new float[]{px, py};
         }
 
         px = baseX + ep.localX;
@@ -115,10 +147,20 @@ public class GestorSalas {
             case OESTE -> px += offset;
         }
 
-        cuerpoJugador.setLinearVelocity(0, 0);
-        cuerpoJugador.setTransform(px, py, 0);
+        return new float[]{px, py};
+    }
+
+    private void colocarJugadorEn(float x, float y, int jugadorId) {
+        Jugador j = gestorEntidades.getJugador(jugadorId);
+        if (j == null) return;
+
+        Body b = j.getCuerpoFisico();
+        if (b == null) return;
+
+        b.setLinearVelocity(0, 0);
+        b.setTransform(x, y, 0);
 
         Gdx.app.log("REUBICACION",
-            "Jugador colocado por " + entrada + " en (" + px + "," + py + ")");
+            "Jugador" + jugadorId + " colocado en (" + x + "," + y + ")");
     }
 }
