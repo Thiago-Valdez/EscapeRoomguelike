@@ -224,14 +224,6 @@ public class GestorDeEntidades {
         puertasPorSala.computeIfAbsent(sala, k -> new ArrayList<>()).add(pv);
     }
 
-    public void renderPuertas(ShapeRenderer sr, Habitacion salaActual) {
-        if (sr == null || salaActual == null) return;
-
-        List<PuertaVisual> puertas = puertasPorSala.get(salaActual);
-        if (puertas == null) return;
-
-        for (PuertaVisual p : puertas) p.render(sr);
-    }
 
     // ===================== ITEMS / UPDATE =====================
 
@@ -295,4 +287,10 @@ public class GestorDeEntidades {
     public void render(SpriteBatch batch) {
         // futuro: dibujar sprites de jugadores/items/enemigos
     }
+
+    public List<PuertaVisual> getPuertasVisuales(Habitacion sala) {
+        List<PuertaVisual> l = puertasPorSala.get(sala);
+        return l != null ? l : java.util.Collections.emptyList();
+    }
+
 }

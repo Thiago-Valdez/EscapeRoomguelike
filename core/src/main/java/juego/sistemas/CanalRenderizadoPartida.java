@@ -1,5 +1,8 @@
 package juego.sistemas;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -14,7 +17,6 @@ import entidades.personajes.Jugador;
 import entidades.sprites.SpritesEntidad;
 import fisica.FisicaMundo;
 import interfaces.hud.HudJuego;
-import juego.inicializacion.InicializadorSensoresPuertas;
 import mapa.model.Habitacion;
 import mapa.puertas.PuertaVisual;
 
@@ -32,19 +34,18 @@ public final class CanalRenderizadoPartida {
     private final HudJuego hud;
     private final GestorDeEntidades gestorEntidades;
     private final SistemaSpritesEntidades sprites;
-    PuertaVisual[] puertasVisuales;
-    private java.util.List<InicializadorSensoresPuertas.RegistroPuerta> puertas;
 
+    private final List<PuertaVisual> puertasVisuales = new ArrayList<>();
 
     public CanalRenderizadoPartida(
-            CamaraDeSala camaraSala,
-            OrthogonalTiledMapRenderer mapaRenderer,
-            ShapeRenderer shapeRendererMundo,
-            SpriteBatch batch,
-            FisicaMundo fisica,
-            HudJuego hud,
-            GestorDeEntidades gestorEntidades,
-            SistemaSpritesEntidades sprites
+        CamaraDeSala camaraSala,
+        OrthogonalTiledMapRenderer mapaRenderer,
+        ShapeRenderer shapeRendererMundo,
+        SpriteBatch batch,
+        FisicaMundo fisica,
+        HudJuego hud,
+        GestorDeEntidades gestorEntidades,
+        SistemaSpritesEntidades sprites
     ) {
         this.camaraSala = camaraSala;
         this.mapaRenderer = mapaRenderer;
@@ -56,34 +57,42 @@ public final class CanalRenderizadoPartida {
         this.sprites = sprites;
     }
 
-    public void render(float delta, Habitacion salaActual, boolean debugFisica, Jugador jugador1, Jugador jugador2, java.util.List<mapa.botones.BotonVisual> botonesVisuales) {
+    public void setPuertasVisuales(List<PuertaVisual> puertasVisuales) {
+        this.puertasVisuales.clear();
+        if (puertasVisuales != null) this.puertasVisuales.addAll(puertasVisuales);
+    }
+
+    public void render(
+        float delta,
+        Habitacion salaActual,
+        boolean debugFisica,
+        Jugador jugador1,
+        Jugador jugador2,
+        List<mapa.botones.BotonVisual> botonesVisuales
+    ) {
         if (camaraSala == null) return;
 
         Gdx.gl.glClearColor(0.05f, 0.05f, 0.07f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        // =====================
+        // Mapa Tiled
+        // =====================
         if (mapaRenderer != null) {
             mapaRenderer.setView(camaraSala.getCamara());
             mapaRenderer.render();
         }
 
-        if (shapeRendererMundo != null && gestorEntidades != null) {
-            shapeRendererMundo.setProjectionMatrix(camaraSala.getCamara().combined);
-            shapeRendererMundo.begin(ShapeRenderer.ShapeType.Filled);
-            gestorEntidades.renderPuertas(shapeRendererMundo, salaActual);
-            shapeRendererMundo.end();
-        }
-
+        // =====================
+        // Sprites (puertas, botones, enemigos, jugadores)
+        // =====================
         if (batch != null) {
             batch.setProjectionMatrix(camaraSala.getCamara().combined);
             batch.begin();
 
-            if (puertas != null && salaActual != null) {
-                for (InicializadorSensoresPuertas.RegistroPuerta r : puertas) {
-                    if (r == null) continue;
-                    if (r.origen() != salaActual) continue;
-
-                    PuertaVisual pv = r.visual();
+            // Puertas (sprite) - se dibujan con la textura asignada a cada PuertaVisual
+            if (puertasVisuales != null && !puertasVisuales.isEmpty()) {
+                for (PuertaVisual pv : puertasVisuales) {
                     if (pv == null) continue;
 
                     TextureRegion tr = pv.frameActual();
@@ -93,53 +102,73 @@ public final class CanalRenderizadoPartida {
                 }
             }
 
+            // Botones (antes que enemigos/jugadores) - se dibujan al tamaño del rect en Tiled
+            if (botonesVisuales != null && salaActual != null) {
+                for (mapa.botones.BotonVisual bv : botonesVisuales) {
+                    if (bv == null) continue;
+                    if (bv.sala != salaActual) continue;
 
+                    float x = bv.posCentro.x - bv.w / 2f;
+                    float y = bv.posCentro.y - bv.h / 2f;
 
-
-// Botones (antes que enemigos/jugadores) - se dibujan al tamaño del rect en Tiled
-if (botonesVisuales != null && salaActual != null) {
-    for (mapa.botones.BotonVisual bv : botonesVisuales) {
-        if (bv == null) continue;
-        if (bv.sala != salaActual) continue;
-
-        float x = bv.posCentro.x - bv.w / 2f;
-        float y = bv.posCentro.y - bv.h / 2f;
-
-        com.badlogic.gdx.graphics.g2d.TextureRegion fr = bv.frameActual();
-        if (fr != null) batch.draw(fr, x, y, bv.w, bv.h);
-    }
-}
+                    TextureRegion fr = bv.frameActual();
+                    if (fr != null) {
+                        batch.draw(fr, x, y, bv.w, bv.h);
+                    }
+                }
+            }
 
             // Enemigos primero (atrás)
             if (gestorEntidades != null && sprites != null) {
                 for (Enemigo e : gestorEntidades.getEnemigosMundo()) {
                     SpritesEntidad s = sprites.get(e);
-                    if (s != null) { s.update(delta); s.render(batch); }
+                    if (s != null) {
+                        s.update(delta);
+                        s.render(batch);
+                    }
                 }
             }
 
             // Jugadores después
             if (sprites != null) {
                 SpritesEntidad s1 = sprites.get(jugador1);
-                if (s1 != null) { s1.update(delta); s1.render(batch); }
+                if (s1 != null) {
+                    s1.update(delta);
+                    s1.render(batch);
+                }
+
                 SpritesEntidad s2 = sprites.get(jugador2);
-                if (s2 != null) { s2.update(delta); s2.render(batch); }
+                if (s2 != null) {
+                    s2.update(delta);
+                    s2.render(batch);
+                }
             }
 
             batch.end();
         }
 
+        // =====================
+        // Debug fisica (opcional)
+        // =====================
         if (debugFisica && fisica != null) {
             fisica.debugDraw(camaraSala.getCamara());
         }
 
+        // =====================
+        // Debug puertas (solo si querés ver hitboxes) - opcional
+        // =====================
+        if (debugFisica && shapeRendererMundo != null && gestorEntidades != null) {
+            shapeRendererMundo.setProjectionMatrix(camaraSala.getCamara().combined);
+            shapeRendererMundo.begin(ShapeRenderer.ShapeType.Line);
+            //gestorEntidades.renderPuertas(shapeRendererMundo, salaActual);
+            shapeRendererMundo.end();
+        }
+
+        // =====================
+        // HUD (siempre al final)
+        // =====================
         if (hud != null) {
             hud.render();
         }
     }
-
-    public void setPuertas(java.util.List<InicializadorSensoresPuertas.RegistroPuerta> puertas) {
-        this.puertas = puertas;
-    }
-
 }

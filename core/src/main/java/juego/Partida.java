@@ -166,6 +166,9 @@ public class Partida {
         // 1.1) Sprites de botones + botones desde Tiled (sensores + visuales)
         cargarSpritesBotones();
 
+        cargarSpritesPuertas();
+
+
         // pixel art sin blur cuando se escalan
         if (texBotonRojo != null) texBotonRojo.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
         if (texBotonAzul != null) texBotonAzul.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
@@ -325,6 +328,11 @@ public class Partida {
     public void render(float delta) {
         if (world == null) return;
 
+        canalRenderizado.setPuertasVisuales(puertasVisuales);
+
+        sincronizarEstadoPuertasVisuales();
+
+
         if (sistemaActualizacion != null) {
             salaActual = sistemaActualizacion.actualizar(
                     delta,
@@ -383,4 +391,28 @@ public class Partida {
 
         world = null;
     }
+
+    private void sincronizarEstadoPuertasVisuales() {
+        if (controlPuzzle == null || salaActual == null) return;
+
+        boolean bloqueada = controlPuzzle.estaBloqueada(salaActual);
+
+        // Si registraste puertas por sala en gestorEntidades, esto es lo ideal:
+        if (gestorEntidades != null) {
+            List<PuertaVisual> puertasSala = gestorEntidades.getPuertasVisuales(salaActual);
+            for (PuertaVisual pv : puertasSala) {
+                if (pv == null) continue;
+                pv.setAbierta(!bloqueada);
+            }
+            return;
+        }
+
+        // Fallback (si no tenés el getter todavía): afecta a todas (menos ideal)
+        for (PuertaVisual pv : puertasVisuales) {
+            if (pv == null) continue;
+            pv.setAbierta(!bloqueada);
+        }
+    }
+
+
 }
